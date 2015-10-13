@@ -1,0 +1,5 @@
+django<1.9
+coverage==4.0.1
+dju-common==0.0.1
+Pillow==3.0.0
+pytz==2015.6
