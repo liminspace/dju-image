@@ -89,3 +89,16 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
 TMP_DIR = os.path.join(BASE_DIR, 'tmp')
+
+DJU_IMG_UPLOAD_PROFILES = {
+    'simple1': {
+        'PATH': 's1',
+        'MAX_SIZE': (100, 200),
+        'VARIANTS': [
+            {'MAX_SIZE', (20, 30)},
+            {'MAX_SIZE': (20, None)},
+            {'MAX_SIZE': (None, 30)},
+            {'MAX_SIZE': (20, 30), 'LABEL': 'lab1'},
+        ],
+    },
+}
