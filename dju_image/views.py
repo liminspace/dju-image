@@ -41,11 +41,15 @@ def upload_image(request):
                             'rel_url': 'відносний від MEDIA url головного файла'
                         },
                         ...
-                    ]
+                    ],
+                    'variants_by_label': {
+                        'variant label': index in variants,
+                        ...
+                    }
                 },
                 ...
             ],
-            'errors': ['error message']
+            'errors': ['error message', ...]
         }
     """
     if request.method != 'POST':
@@ -79,9 +83,10 @@ def upload_image(request):
             'url': settings.MEDIA_URL + relative_path,
             'rel_url': relative_path,
             'img_id': img_id,
-            'variants': []
+            'variants': [],
+            'variants_by_label': {},
         }
-        for v_conf in conf['VARIANTS']:
+        for ix, v_conf in enumerate(conf['VARIANTS']):
             label = v_conf['LABEL']
             if not label:
                 label = get_variant_label(v_conf)
@@ -95,5 +100,6 @@ def upload_image(request):
                 'url': settings.MEDIA_URL + v_relative_path,
                 'rel_url': v_relative_path,
             })
+            data['variants_by_label'][label] = ix
         result['uploaded'].append(data)
     return send_json(result)
