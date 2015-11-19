@@ -1,7 +1,7 @@
 # coding=utf-8
 import os
 import subprocess
-from StringIO import StringIO
+from cStringIO import StringIO
 from PIL import Image, ImageFile
 from contextlib import contextmanager
 from django.core.files.uploadedfile import UploadedFile
@@ -79,7 +79,7 @@ def _save_img(img, f, *args, **kwargs):
              {'mb_x': 10},
              {'mb_x': 10, 'disable_optimize': True},
              {'mb_x': 10, 'disable_optimize': True, 'disable_progressive': True})
-    maxblock = img.size[0] * img.size[1]
+    maxblock = max(ImageFile.MAXBLOCK, img.size[0] * img.size[1])
     last_error = None
     for mode in modes:
         try:

@@ -1,11 +1,19 @@
 # coding=utf-8
 import os
 from django.conf import settings
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy
 from dju_common.http import send_json
 from dju_image.image import image_get_format, adjust_image, is_image
 from dju_image.upload import (get_profile_configs, save_file, generate_img_id,
                               get_relative_path_from_img_id, get_variant_label)
+
+
+ERROR_MESSAGES = {
+    'no_uploaded_files': ugettext_lazy('Uploaded files not found.'),
+    'wrong_file_format': ugettext_lazy('Format of uploaded file "%(name)s" is not allowed. '
+                                       'Allowed formats is: %(formats)s.'),
+    'wrong_profile': ugettext_lazy('')
+}
 
 
 def upload_image(request):
@@ -16,7 +24,7 @@ def upload_image(request):
             images[]: файли зображеннь
         POST DATA
             profile: назва профілю (для визначення налаштувань збреження) (опціонально)
-            label: додаток до назви файлу при збереженні (опіонально)
+            label: додаток до назви файлу при збереженні (опціонально)
     Структура відповіді:
         Тип відповіді: JSON
         {
@@ -24,7 +32,7 @@ def upload_image(request):
                 {
                     'url': 'повний url до головного файла',
                     'rel_url': 'відносний від MEDIA url головного файла',
-                    'img_id': 'ідентифікатор для збереження в БД',  // 'profilename:abcdef_abcd_name.png',
+                    'img_id': 'ідентифікатор для збереження в БД',  // 'profilename:abcdef_abcd_label.png',
                     'variants': [
                         {
                             'url': 'повний url до варіанта',
@@ -41,7 +49,7 @@ def upload_image(request):
     result = {'uploaded': [], 'errors': []}
     files = request.FILES.getlist('images[]')
     if not files:
-        result['errors'].append(_('Uploaded files not found.'))
+        result['errors'].append(unicode(ERROR_MESSAGES['no_uploaded_files']))
         return send_json(result)
     try:
         profile = request.POST.get('profile', 'default')
@@ -53,8 +61,8 @@ def upload_image(request):
         f = files[i]
         if not is_image(f, types=conf['TYPES']):
             result['errors'].append(
-                _('Format of uploaded file "%(name)s" is not allowed. Allowed formats is: %(formats)s.') %
-                (f.name, ', '.join(map(lambda t: t.upper(), conf['TYPES'])))
+                unicode(ERROR_MESSAGES['wrong_file_format']) %
+                {'name': f.name, 'formats': ', '.join(map(lambda t: t.upper(), conf['TYPES']))}
             )
             continue
         adjust_image(f, max_size=conf['MAX_SIZE'], new_format=conf['FORMAT'],

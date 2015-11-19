@@ -1,8 +1,8 @@
 import glob
 import os
 import shutil
+import cStringIO
 from PIL import Image
-from StringIO import StringIO
 from django.conf import settings
 from django.core.files.uploadedfile import UploadedFile
 from django.test import TestCase
@@ -96,13 +96,14 @@ class TestAdjustImage(ImageCase):
 
     def test_new_image(self):
         self.make_files_for_images()
-        self.assertIsInstance(adjust_image(self.f_200x200_jpeg, return_new_image=True), StringIO)
+        self.assertIsInstance(adjust_image(self.f_200x200_jpeg, return_new_image=True),
+                              (cStringIO.InputType, cStringIO.OutputType))
 
     def test_cmyk_to_rgb(self):
         img_200x200_cmyk = create_test_image(200, 200, c='CMYK')
         f_200x200_jpeg_cmyk = get_img_file(img_200x200_cmyk)
         t = adjust_image(f_200x200_jpeg_cmyk, return_new_image=True)
-        self.assertIsInstance(t, StringIO)
+        self.assertIsInstance(t, (cStringIO.InputType, cStringIO.OutputType))
         self.assertEqual(Image.open(t).mode, 'RGB')
 
     def test_adjust_image_invalid_new_format(self):
@@ -112,7 +113,7 @@ class TestAdjustImage(ImageCase):
 
     def test_set_uploaded_file_content_type_and_file_ext_error(self):
         with self.assertRaises(RuntimeError):
-            set_uploaded_file_content_type_and_file_ext(StringIO(), img_format='test')
+            set_uploaded_file_content_type_and_file_ext(cStringIO.StringIO(), img_format='test')
 
 
 class TestImageGetFormat(TestCase):
@@ -127,7 +128,7 @@ class TestImageGetFormat(TestCase):
         self.assertEqual(image_get_format(self.img_gif), 'gif')
 
     def test_bad_format(self):
-        self.assertIsNone(image_get_format(StringIO('x' * 1000)))
+        self.assertIsNone(image_get_format(cStringIO.StringIO('x' * 1000)))
 
 
 class TestIsImage(TestCase):
@@ -181,7 +182,7 @@ class OptimizePNGFile(ImageCase):
         self.assertTrue(original_size > (os.path.getsize(self.png1_fn) * 0.2))
 
     def test_pass_rw_object(self):
-        o = StringIO()
+        o = cStringIO.StringIO()
         self.assertTrue(optimize_png_file(self.png1_f, o))
         self.assertImageFormat(o, 'PNG')
         self.png1_f.seek(0, os.SEEK_END)

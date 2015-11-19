@@ -1,32 +1,23 @@
-import glob
 import hashlib
 import os
 import re
-import shutil
 from django.conf import settings
 from django.test import TestCase
 from dju_image.image import image_get_format
 from dju_image.upload import (get_relative_path_from_img_id, generate_img_id, get_profile_configs,
                               get_variant_label, save_file)
 from dju_image import settings as dju_settings
-from tests.tests.tools import get_img_file, create_test_image
+from tests.tests.tools import get_img_file, create_test_image, clean_media_dir
 
 
 class TestUpload(TestCase):
     def setUp(self):
         super(TestUpload, self).setUp()
-        self._clean_media_dir()
+        clean_media_dir()
 
     def tearDown(self):
         super(TestUpload, self).tearDown()
-        self._clean_media_dir()
-
-    def _clean_media_dir(self):
-        for fn in glob.glob(os.path.join(settings.MEDIA_ROOT, '*')):
-            if os.path.isdir(fn):
-                shutil.rmtree(fn)
-            else:
-                os.remove(fn)
+        clean_media_dir()
 
     def test_generate_img_id(self):
         for i in xrange(50):

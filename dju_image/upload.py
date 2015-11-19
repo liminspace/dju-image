@@ -9,12 +9,21 @@ from django.conf import settings
 from django.utils.crypto import get_random_string
 from dju_common.file import make_dirs_for_file_path
 from dju_common.tools import dtstr_to_datetime, datetime_to_dtstr
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy
 from .image import image_get_format, is_image, adjust_image
 from . import settings as dju_settings
 
 
 _profile_configs_cache = {}
+
+
+def clear_profile_configs_cache():
+    _profile_configs_cache.clear()
+
+
+ERROR_MESSAGES = {
+    'unknown_profile': ugettext_lazy('Unknown profile "%(profile)s".')
+}
 
 
 def get_profile_configs(profile=None, use_cache=True):
@@ -29,7 +38,7 @@ def get_profile_configs(profile=None, use_cache=True):
             profile_conf = dju_settings.DJU_IMG_UPLOAD_PROFILES[profile]
         except KeyError:
             if profile != 'default':
-                raise ValueError(_('Unknown profile "%s".') % profile)
+                raise ValueError(unicode(ERROR_MESSAGES['unknown_profile']) % {'profile': profile})
     conf = copy.deepcopy(dju_settings.DJU_IMG_UPLOAD_PROFILE_DEFAULT)
     if profile_conf:
         conf.update(copy.deepcopy(profile_conf))

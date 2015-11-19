@@ -1,8 +1,14 @@
+import glob
 import os
+import shutil
+import copy
+from contextlib import contextmanager
 from PIL import Image
 from PIL.ImageDraw import ImageDraw
-from StringIO import StringIO
+from cStringIO import StringIO
 from django.conf import settings
+from dju_image import settings as dju_settings
+from dju_image.upload import clear_profile_configs_cache
 
 
 def create_test_image(w, h, c='RGB'):
@@ -21,6 +27,7 @@ def create_test_image(w, h, c='RGB'):
 def get_img_file(img, img_format='JPEG', jpeg_quality=100):
     f = StringIO()
     img.save(f, img_format, quality=jpeg_quality)
+    f.seek(0)
     return f
 
 
@@ -31,3 +38,32 @@ def save_img_file(fn, img, img_format='JPEG', jpeg_quality=100):
     with open(full_path, 'wb') as f:
         img.save(f, img_format, quality=jpeg_quality)
     return full_path
+
+
+def clean_media_dir():
+    for fn in glob.glob(os.path.join(settings.MEDIA_ROOT, '*')):
+        if os.path.isdir(fn):
+            shutil.rmtree(fn)
+        else:
+            os.remove(fn)
+
+
+@contextmanager
+def safe_change_dju_settings():
+    """
+    with safe_change_dju_settings():
+        dju_settings.DJU_IMG_UPLOAD_PROFILE_DEFAULT['TYPES'] = ('PNG',)
+        ...
+    # dju settings will be restored
+    ...
+    """
+    settings_bak = {}
+    for k, v in dju_settings.__dict__.iteritems():
+        if k[:4] == 'DJU_':
+            settings_bak[k] = copy.deepcopy(v)
+    try:
+        yield
+    finally:
+        for k, v in settings_bak.iteritems():
+            setattr(dju_settings, k, v)
+        clear_profile_configs_cache()
