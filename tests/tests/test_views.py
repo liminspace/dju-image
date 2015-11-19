@@ -44,6 +44,15 @@ class TestViews(TestCase):
                 var_path = os.path.join(settings.MEDIA_ROOT, var_item['rel_url']).replace('\\', '/')
                 self.assertTrue(os.path.isfile(var_path))
 
+    def test_upload_image_wrong_request_method(self):
+        self.assertTrue(self.client.get(self.upload_url).status_code, 405)
+        self.assertTrue(self.client.head(self.upload_url).status_code, 405)
+        self.assertTrue(self.client.options(self.upload_url).status_code, 405)
+        self.assertTrue(self.client.put(self.upload_url).status_code, 405)
+        self.assertTrue(self.client.trace(self.upload_url).status_code, 405)
+        self.assertTrue(self.client.patch(self.upload_url).status_code, 405)
+        self.assertTrue(self.client.delete(self.upload_url).status_code, 405)
+
     def test_upload_image_empty_data_and_files(self):
         r = self.client.post(self.upload_url)
         self.assertEqual(r.status_code, 200)

@@ -1,6 +1,7 @@
 # coding=utf-8
 import os
 from django.conf import settings
+from django.http import HttpResponseNotAllowed
 from django.utils.translation import ugettext_lazy
 from dju_common.http import send_json
 from dju_image.image import image_get_format, adjust_image, is_image
@@ -46,6 +47,8 @@ def upload_image(request):
             'errors': ['error message']
         }
     """
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(('POST',))
     result = {'uploaded': [], 'errors': []}
     files = request.FILES.getlist('images[]')
     if not files:
