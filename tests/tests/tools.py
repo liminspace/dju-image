@@ -8,7 +8,7 @@ from PIL.ImageDraw import ImageDraw
 from cStringIO import StringIO
 from django.conf import settings
 from dju_image import settings as dju_settings
-from dju_image.upload import clear_profile_configs_cache
+from dju_image.tools import clear_profile_configs_cache
 
 
 def create_test_image(w, h, c='RGB'):

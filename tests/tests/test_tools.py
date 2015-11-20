@@ -4,8 +4,8 @@ import re
 from django.conf import settings
 from django.test import TestCase
 from dju_image.image import image_get_format
-from dju_image.upload import (get_relative_path_from_img_id, generate_img_id, get_profile_configs,
-                              get_variant_label, save_file)
+from dju_image.tools import (get_relative_path_from_img_id, generate_img_id, get_profile_configs,
+                             get_variant_label, save_file)
 from dju_image import settings as dju_settings
 from tests.tests.tools import get_img_file, create_test_image, clean_media_dir
 

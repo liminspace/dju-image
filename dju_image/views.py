@@ -5,8 +5,8 @@ from django.http import HttpResponseNotAllowed
 from django.utils.translation import ugettext_lazy
 from dju_common.http import send_json
 from dju_image.image import image_get_format, adjust_image, is_image
-from dju_image.upload import (get_profile_configs, save_file, generate_img_id,
-                              get_relative_path_from_img_id, get_variant_label)
+from dju_image.tools import (get_profile_configs, save_file, generate_img_id,
+                             get_relative_path_from_img_id, get_variant_label)
 from dju_image import settings as dju_settings
 
 

@@ -4,9 +4,8 @@ from cStringIO import StringIO
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.test import TestCase, override_settings
-from dju_image.upload import get_relative_path_from_img_id, clear_profile_configs_cache
+from dju_image.tools import get_relative_path_from_img_id, clear_profile_configs_cache, ERROR_MESSAGES as TOOLS_ERRORS
 from dju_image.views import ERROR_MESSAGES as VIEWS_ERRORS
-from dju_image.upload import ERROR_MESSAGES as UPLOAD_ERRORS
 from tests.tests.tools import get_img_file, create_test_image, clean_media_dir, safe_change_dju_settings
 from dju_image import settings as dju_settings
 
@@ -135,7 +134,7 @@ class TestViews(TestCase):
         d = self.get_json(r)
         self.assertEqual(len(d['uploaded']), 0)
         self.assertEqual(len(d['errors']), 1)
-        self.assertEqual(d['errors'][0], unicode(UPLOAD_ERRORS['unknown_profile']) % {'profile': 'wrong'})
+        self.assertEqual(d['errors'][0], unicode(TOOLS_ERRORS['unknown_profile']) % {'profile': 'wrong'})
 
     def test_upload_image_variants(self):
         f1 = get_img_file(create_test_image(1000, 1000))
