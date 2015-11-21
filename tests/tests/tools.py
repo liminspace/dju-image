@@ -2,11 +2,13 @@ import glob
 import os
 import shutil
 import copy
+import simplejson
 from contextlib import contextmanager
 from PIL import Image
 from PIL.ImageDraw import ImageDraw
 from cStringIO import StringIO
 from django.conf import settings
+from django.test import TestCase
 from dju_image import settings as dju_settings
 from dju_image.tools import clear_profile_configs_cache
 
@@ -67,3 +69,24 @@ def safe_change_dju_settings():
         for k, v in settings_bak.iteritems():
             setattr(dju_settings, k, v)
         clear_profile_configs_cache()
+
+
+class ViewTestCase(TestCase):
+    def get_json(self, response):
+        self.assertEqual(response['Content-Type'], 'application/json')
+        try:
+            data = simplejson.loads(response.content)
+        except (TypeError, simplejson.JSONDecodeError):
+            raise self.failureException('Response is not JSON')
+        self.assertIsInstance(data, dict)
+        self.assertIsInstance(data['uploaded'], list)
+        self.assertIsInstance(data['errors'], list)
+        return data
+
+    def assertUploadedFilesExist(self, response_data):
+        for item in response_data['uploaded']:
+            path = os.path.join(settings.MEDIA_ROOT, item['rel_url']).replace('\\', '/')
+            self.assertTrue(os.path.isfile(path))
+            for var_item in item['variants']:
+                var_path = os.path.join(settings.MEDIA_ROOT, var_item['rel_url']).replace('\\', '/')
+                self.assertTrue(os.path.isfile(var_path))

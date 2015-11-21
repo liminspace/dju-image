@@ -1,16 +1,16 @@
 import os
-import simplejson
 from cStringIO import StringIO
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from dju_image.tools import get_relative_path_from_img_id, clear_profile_configs_cache, ERROR_MESSAGES as TOOLS_ERRORS
 from dju_image.views import ERROR_MESSAGES as VIEWS_ERRORS
-from tests.tests.tools import get_img_file, create_test_image, clean_media_dir, safe_change_dju_settings
+from tests.tests.tools import (get_img_file, create_test_image, clean_media_dir, safe_change_dju_settings,
+                               ViewTestCase)
 from dju_image import settings as dju_settings
 
 
-class TestViews(TestCase):
+class TestViews(ViewTestCase):
     @classmethod
     def setUpClass(cls):
         super(TestViews, cls).setUpClass()
@@ -23,25 +23,6 @@ class TestViews(TestCase):
     def tearDown(self):
         super(TestViews, self).tearDown()
         clean_media_dir()
-
-    def get_json(self, response):
-        self.assertEqual(response['Content-Type'], 'application/json')
-        try:
-            data = simplejson.loads(response.content)
-        except (TypeError, simplejson.JSONDecodeError):
-            raise self.failureException('Response is not JSON')
-        self.assertIsInstance(data, dict)
-        self.assertIsInstance(data['uploaded'], list)
-        self.assertIsInstance(data['errors'], list)
-        return data
-
-    def assertUploadedFilesExist(self, response_data):
-        for item in response_data['uploaded']:
-            path = os.path.join(settings.MEDIA_ROOT, item['rel_url']).replace('\\', '/')
-            self.assertTrue(os.path.isfile(path))
-            for var_item in item['variants']:
-                var_path = os.path.join(settings.MEDIA_ROOT, var_item['rel_url']).replace('\\', '/')
-                self.assertTrue(os.path.isfile(var_path))
 
     def test_upload_image_wrong_request_method(self):
         self.assertEqual(self.client.get(self.upload_url).status_code, 405)

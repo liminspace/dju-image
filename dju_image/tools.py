@@ -1,4 +1,5 @@
 # coding=utf-8
+import glob
 import os
 import copy
 import re
@@ -14,6 +15,9 @@ from . import settings as dju_settings
 ERROR_MESSAGES = {
     'unknown_profile': ugettext_lazy('Unknown profile "%(profile)s".')
 }
+
+
+HASH_SIZE = 10
 
 
 _profile_configs_cache = {}
@@ -83,6 +87,12 @@ def generate_img_id(profile, ext=None, label=None, tmp=False):
     )
 
 
+def get_hash(name, variant_label=None):
+    # name must be without label, for example 'uniqname_rand'
+    h = hashlib.sha1(name + (variant_label or '') + dju_settings.DJU_IMG_UPLOAD_KEY).hexdigest()
+    return h[:HASH_SIZE]
+
+
 def get_relative_path_from_img_id(img_id, variant_label=None, ext=None, create_dirs=False):
     """
     Returns path to file relative MEDIA_URL.
@@ -99,20 +109,23 @@ def get_relative_path_from_img_id(img_id, variant_label=None, ext=None, create_d
         name = name[len(dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX):]
         prefix = dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX
     name_parts = name.split('_', 2)
-    h = hashlib.sha1('_'.join(name_parts[:2]) + (variant_label or '') + dju_settings.DJU_IMG_UPLOAD_KEY).hexdigest()
     name = '{name}{status_suffix}{hash}'.format(
         name=name,
         status_suffix=status_suffix,
-        hash=h[:10],
+        hash=get_hash('_'.join(name_parts[:2]), variant_label=variant_label)
     )
     if variant_label:
         name += '_' + variant_label
     if ext:
         file_ext = ext
     elif variant_label:
-        pass
-        # todo file_ext = get ext from variant settings if it setted there
-    if not file_ext.startswith('.'):
+        for var_conf in conf['VARIANTS']:
+            var_conf_label = var_conf['LABEL'] or get_variant_label(var_conf)
+            if var_conf_label == variant_label:
+                if var_conf['FORMAT']:
+                    file_ext = var_conf['FORMAT'].lower()
+                break
+    if file_ext and not file_ext.startswith('.'):
         file_ext = '.' + file_ext
     relative_path = os.path.join(
         dju_settings.DJU_IMG_UPLOAD_SUBDIR,
@@ -137,6 +150,13 @@ def get_variant_label(v_conf):
     return '{}x{}'.format(*v_conf['MAX_SIZE'])
 
 
+variant_hash_label_re = re.compile(r'^.+?{suf}([a-z0-9]{{hs}})_(.+?)(?:|\.[A-Za-z]{3,4})$'.replace(
+    '{suf}', dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX
+).replace(
+    '{hs}', str(HASH_SIZE)
+))
+
+
 def get_files_by_img_id(img_id):
     """
     Шукає файли для img_id.
@@ -148,13 +168,36 @@ def get_files_by_img_id(img_id):
             ...
         }
     }
+    Якщо файл не існує, тоді поверає None.
+    Пошук варіантів відбуваться в файловій системі не залежно від налаштувань.
     """
-    pass  # todo make it
-    # dir_path, filename = os.path.split(os.path.abspath(filepath))
-    # name = add_thumb_suffix_to_filename(os.path.splitext(filename)[0], label=label)
-    # pattern = os.path.join(dir_path, name).replace('\\', '/') + '*.*'
-    # return [fn.replace('\\', '/') for fn in glob.iglob(pattern)
-    #         if os.path.splitext(fn)[1].lstrip('.').lower() in dju_settings.DJU_IMG_UPLOAD_IMG_EXTS]
+    main_rel_path = get_relative_path_from_img_id(img_id)
+    main_path = os.path.join(settings.MEDIA_ROOT, main_rel_path).replace('\\', '/')
+    if not os.path.isfile(main_path):
+        return None
+    filename = os.path.basename(main_rel_path)
+    name_left_part = filename.split(dju_settings.DJU_IMG_UPLOAD_MAIN_SUFFIX, 1)[0]
+    img_name = name_left_part
+    if img_name.startswith(dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX):
+        img_name = img_name[len(dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX):]
+    img_name_parts = img_name.split('_', 2)
+    img_name = '_'.join(img_name_parts[:2])
+    search_pattern = name_left_part + dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX + '*'
+    search_dir = os.path.dirname(main_path)
+    variants = {}
+    for var_path in glob.iglob(os.path.join(search_dir, search_pattern.replace('\\', '/'))):
+        var_filename = os.path.basename(var_path)
+        m = variant_hash_label_re.match(var_filename)
+        if not m:
+            continue
+        var_hash, var_label = m.groups()
+        if var_hash != get_hash(img_name, var_label):
+            continue
+        variants[var_label] = os.path.relpath(var_path, settings.MEDIA_ROOT)
+    return {
+        'main': main_rel_path,
+        'variants': variants,
+    }
 
 
 # def get_filepath_of_url(url):  # todo remove it

@@ -1,22 +1,28 @@
 import hashlib
 import os
 import re
+import shutil
 from django.conf import settings
-from django.test import TestCase
+from django.core.urlresolvers import reverse
 from dju_image.image import image_get_format
 from dju_image.tools import (get_relative_path_from_img_id, generate_img_id, get_profile_configs,
-                             get_variant_label, save_file)
+                             get_variant_label, save_file, get_files_by_img_id, HASH_SIZE)
 from dju_image import settings as dju_settings
-from tests.tests.tools import get_img_file, create_test_image, clean_media_dir
+from tests.tests.tools import get_img_file, create_test_image, clean_media_dir, ViewTestCase
 
 
-class TestUpload(TestCase):
+class TestTools(ViewTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(TestTools, cls).setUpClass()
+        cls.upload_url = reverse('dju_image_upload')
+
     def setUp(self):
-        super(TestUpload, self).setUp()
+        super(TestTools, self).setUp()
         clean_media_dir()
 
     def tearDown(self):
-        super(TestUpload, self).tearDown()
+        super(TestTools, self).tearDown()
         clean_media_dir()
 
     def test_generate_img_id(self):
@@ -59,7 +65,15 @@ class TestUpload(TestCase):
             'upload-img/common/34/abcde1234_ab12__m_93c87b2a66.jpeg'
         )
         self.assertEqual(
+            get_relative_path_from_img_id('default:abcde1234_ab12'),
+            'upload-img/common/34/abcde1234_ab12__m_93c87b2a66'
+        )
+        self.assertEqual(
             get_relative_path_from_img_id('default:abcde1234_ab12.jpeg', ext='png'),
+            'upload-img/common/34/abcde1234_ab12__m_93c87b2a66.png'
+        )
+        self.assertEqual(
+            get_relative_path_from_img_id('default:abcde1234_ab12', ext='png'),
             'upload-img/common/34/abcde1234_ab12__m_93c87b2a66.png'
         )
         self.assertEqual(
@@ -67,7 +81,15 @@ class TestUpload(TestCase):
             'upload-img/common/34/abcde1234_ab12__v_b8a30d0227_test.jpeg'
         )
         self.assertEqual(
+            get_relative_path_from_img_id('default:abcde1234_ab12', variant_label='test'),
+            'upload-img/common/34/abcde1234_ab12__v_b8a30d0227_test'
+        )
+        self.assertEqual(
             get_relative_path_from_img_id('default:abcde1234_ab12.jpeg', variant_label='test', ext='png'),
+            'upload-img/common/34/abcde1234_ab12__v_b8a30d0227_test.png'
+        )
+        self.assertEqual(
+            get_relative_path_from_img_id('default:abcde1234_ab12', variant_label='test', ext='png'),
             'upload-img/common/34/abcde1234_ab12__v_b8a30d0227_test.png'
         )
 
@@ -91,6 +113,10 @@ class TestUpload(TestCase):
         self.assertEqual(
             get_relative_path_from_img_id('default:abcde1234_ab12_myname.jpeg'),
             'upload-img/common/34/abcde1234_ab12_myname__m_93c87b2a66.jpeg'
+        )
+        self.assertEqual(
+            get_relative_path_from_img_id('default:abcde1234_ab12_myname'),
+            'upload-img/common/34/abcde1234_ab12_myname__m_93c87b2a66'
         )
         self.assertEqual(
             get_relative_path_from_img_id('default:abcde1234_ab12_myname.jpeg', ext='png'),
@@ -120,6 +146,31 @@ class TestUpload(TestCase):
         self.assertEqual(
             get_relative_path_from_img_id('default:__t_abcde1234_ab12_myname.jpeg', variant_label='test', ext='png'),
             'upload-img/common/34/__t_abcde1234_ab12_myname__v_b8a30d0227_test.png'
+        )
+
+        self.assertEqual(
+            get_relative_path_from_img_id('simple0:__t_abcde1234_ab12.jpeg', variant_label='20x30'),
+            'upload-img/s0/34/__t_abcde1234_ab12__v_51c425ba08_20x30.png'
+        )
+        self.assertEqual(
+            get_relative_path_from_img_id('simple0:__t_abcde1234_ab12', variant_label='20x30'),
+            'upload-img/s0/34/__t_abcde1234_ab12__v_51c425ba08_20x30.png'
+        )
+        self.assertEqual(
+            get_relative_path_from_img_id('simple0:__t_abcde1234_ab12.jpeg', variant_label='w20'),
+            'upload-img/s0/34/__t_abcde1234_ab12__v_a4b31265b5_w20.gif'
+        )
+        self.assertEqual(
+            get_relative_path_from_img_id('simple0:__t_abcde1234_ab12.jpeg', variant_label='w20', ext='png'),
+            'upload-img/s0/34/__t_abcde1234_ab12__v_a4b31265b5_w20.png'
+        )
+        self.assertEqual(
+            get_relative_path_from_img_id('simple0:__t_abcde1234_ab12.png', variant_label='lab0'),
+            'upload-img/s0/34/__t_abcde1234_ab12__v_4f495406be_lab0.jpeg'
+        )
+        self.assertEqual(
+            get_relative_path_from_img_id('simple0:__t_abcde1234_ab12.png', variant_label='lab0', ext='gif'),
+            'upload-img/s0/34/__t_abcde1234_ab12__v_4f495406be_lab0.gif'
         )
 
     def test_get_relative_path_from_img_id_with_create_dirs(self):
@@ -162,3 +213,139 @@ class TestUpload(TestCase):
             h1 = hashlib.md5(f.read()).hexdigest()
             h2 = hashlib.md5(open(full_path, 'rb').read()).hexdigest()
             self.assertEqual(h1, h2)
+
+    def test_get_files_by_img_id(self):
+        r = self.client.post(self.upload_url, {
+            'images[]': [
+                get_img_file(create_test_image(1000, 1000)),
+                get_img_file(create_test_image(900, 900)),
+                get_img_file(create_test_image(800, 800)),
+                get_img_file(create_test_image(700, 700)),
+            ],
+            'profile': 'simple1',
+        })
+        self.assertEqual(r.status_code, 200)
+        d = self.get_json(r)
+        self.assertEqual(len(d['uploaded']), dju_settings.DJU_IMG_UPLOAD_MAX_FILES)
+        self.assertEqual(len(d['errors']), 0)
+        self.assertUploadedFilesExist(d)
+        for item in d['uploaded']:
+            r = get_files_by_img_id(item['img_id'])
+            self.assertEqual(r['main'], item['rel_url'])
+            self.assertEqual(len(item['variants']), len(r['variants']))
+            for var_label, ix in item['variants_by_label'].iteritems():
+                self.assertEqual(r['variants'][var_label], item['variants'][ix]['rel_url'])
+
+        r = self.client.post(self.upload_url, {
+            'images[]': [
+                get_img_file(create_test_image(1000, 1000)),
+                get_img_file(create_test_image(900, 900)),
+                get_img_file(create_test_image(800, 800)),
+                get_img_file(create_test_image(700, 700)),
+            ],
+            'profile': 'simple1',
+            'label': 'world1',
+        })
+        self.assertEqual(r.status_code, 200)
+        d = self.get_json(r)
+        self.assertEqual(len(d['uploaded']), dju_settings.DJU_IMG_UPLOAD_MAX_FILES)
+        self.assertEqual(len(d['errors']), 0)
+        self.assertUploadedFilesExist(d)
+        for item in d['uploaded']:
+            r = get_files_by_img_id(item['img_id'])
+            self.assertEqual(r['main'], item['rel_url'])
+            self.assertEqual(len(item['variants']), len(r['variants']))
+            for var_label, ix in item['variants_by_label'].iteritems():
+                self.assertEqual(r['variants'][var_label], item['variants'][ix]['rel_url'])
+
+    def test_get_files_by_img_id_removed_variants_ext(self):
+        r = self.client.post(self.upload_url, {
+            'images[]': [
+                get_img_file(create_test_image(1000, 1000)),
+                get_img_file(create_test_image(900, 900)),
+                get_img_file(create_test_image(800, 800)),
+                get_img_file(create_test_image(700, 700)),
+            ],
+            'profile': 'simple0',
+            'label': 'world0',
+        })
+        self.assertEqual(r.status_code, 200)
+        d = self.get_json(r)
+        self.assertEqual(len(d['uploaded']), dju_settings.DJU_IMG_UPLOAD_MAX_FILES)
+        self.assertEqual(len(d['errors']), 0)
+        self.assertUploadedFilesExist(d)
+        for item in d['uploaded']:
+            for i in xrange(len(item['variants'])):
+                # remove ext for all variants files
+                rel_url = item['variants'][i]['rel_url']
+                rel_url_new = os.path.splitext(rel_url)[0]
+                os.rename(
+                    os.path.join(settings.MEDIA_ROOT, rel_url).replace('\\', '/'),
+                    os.path.join(settings.MEDIA_ROOT, rel_url_new).replace('\\', '/')
+                )
+                item['variants'][i]['rel_url'] = rel_url_new
+            r = get_files_by_img_id(item['img_id'])
+            self.assertEqual(r['main'], item['rel_url'])
+            self.assertEqual(len(item['variants']), len(r['variants']))
+            for var_label, ix in item['variants_by_label'].iteritems():
+                self.assertEqual(r['variants'][var_label], item['variants'][ix]['rel_url'])
+
+    def test_get_files_by_img_id_with_invalid_hash_and_filename_pattern(self):
+        r = self.client.post(self.upload_url, {
+            'images[]': [
+                get_img_file(create_test_image(1000, 1000)),
+                get_img_file(create_test_image(900, 900)),
+                get_img_file(create_test_image(800, 800)),
+                get_img_file(create_test_image(700, 700)),
+            ],
+            'profile': 'simple0',
+            'label': 'world0',
+        })
+        self.assertEqual(r.status_code, 200)
+        d = self.get_json(r)
+        self.assertEqual(len(d['uploaded']), dju_settings.DJU_IMG_UPLOAD_MAX_FILES)
+        self.assertEqual(len(d['errors']), 0)
+        self.assertUploadedFilesExist(d)
+        for item in d['uploaded']:
+            for var_item in item['variants']:
+                # add file with invalid hash
+                rel_url = var_item['rel_url']
+                rel_url_new = re.sub(
+                    # r'(__v_)[a-z0-9]{10}(_.+)',
+                    r'({suf})[a-z0-9]{{hs}}(_.+)'.replace(
+                        '{suf}', dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX
+                    ).replace(
+                        '{hs}', str(HASH_SIZE)
+                    ),
+                    r'\1{h}\2'.replace('{h}', 'z' * HASH_SIZE),
+                    rel_url
+                )
+                shutil.copy(
+                    os.path.join(settings.MEDIA_ROOT, rel_url).replace('\\', '/'),
+                    os.path.join(settings.MEDIA_ROOT, rel_url_new).replace('\\', '/')
+                )
+                # add file with invalid filename pattern
+                rel_url = var_item['rel_url']
+                rel_url_new = re.sub(
+                    # r'(__v_)[a-z0-9]{10}(_.+)',
+                    r'({suf})[a-z0-9]{{hs}}(_.+)'.replace(
+                        '{suf}', dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX
+                    ).replace(
+                        '{hs}', str(HASH_SIZE)
+                    ),
+                    r'\1{h}\2'.replace('{h}', 'z' * (HASH_SIZE + 1)),
+                    rel_url
+                )
+                shutil.copy(
+                    os.path.join(settings.MEDIA_ROOT, rel_url).replace('\\', '/'),
+                    os.path.join(settings.MEDIA_ROOT, rel_url_new).replace('\\', '/')
+                )
+            r = get_files_by_img_id(item['img_id'])
+            self.assertEqual(r['main'], item['rel_url'])
+            self.assertEqual(len(item['variants']), len(r['variants']))
+            for var_label, ix in item['variants_by_label'].iteritems():
+                self.assertEqual(r['variants'][var_label], item['variants'][ix]['rel_url'])
+
+    def test_get_files_by_img_id_file_is_not_exists(self):
+        r = get_files_by_img_id(generate_img_id('simple0'))
+        self.assertIsNone(r)

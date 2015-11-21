@@ -91,6 +91,15 @@ MEDIA_URL = '/media/'
 TMP_DIR = os.path.join(BASE_DIR, 'tmp')
 
 DJU_IMG_UPLOAD_PROFILES = {
+    'simple0': {
+        'PATH': 's0',
+        'MAX_SIZE': (120, 220),
+        'VARIANTS': [
+            {'MAX_SIZE': (20, 30), 'FORMAT': 'PNG'},
+            {'MAX_SIZE': (20, None), 'FORMAT': 'GIF'},
+            {'MAX_SIZE': (20, 30), 'FORMAT': 'JPEG', 'LABEL': 'lab0'},
+        ],
+    },
     'simple1': {
         'PATH': 's1',
         'MAX_SIZE': (100, 200),
