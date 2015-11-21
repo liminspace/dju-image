@@ -311,7 +311,6 @@ class TestTools(ViewTestCase):
                 # add file with invalid hash
                 rel_url = var_item['rel_url']
                 rel_url_new = re.sub(
-                    # r'(__v_)[a-z0-9]{10}(_.+)',
                     r'({suf})[a-z0-9]{{hs}}(_.+)'.replace(
                         '{suf}', dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX
                     ).replace(
@@ -327,7 +326,6 @@ class TestTools(ViewTestCase):
                 # add file with invalid filename pattern
                 rel_url = var_item['rel_url']
                 rel_url_new = re.sub(
-                    # r'(__v_)[a-z0-9]{10}(_.+)',
                     r'({suf})[a-z0-9]{{hs}}(_.+)'.replace(
                         '{suf}', dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX
                     ).replace(
@@ -341,6 +339,46 @@ class TestTools(ViewTestCase):
                     os.path.join(settings.MEDIA_ROOT, rel_url_new).replace('\\', '/')
                 )
             r = get_files_by_img_id(item['img_id'])
+            self.assertEqual(r['main'], item['rel_url'])
+            self.assertEqual(len(item['variants']), len(r['variants']))
+            for var_label, ix in item['variants_by_label'].iteritems():
+                self.assertEqual(r['variants'][var_label], item['variants'][ix]['rel_url'])
+
+    def test_get_files_by_img_id_with_invalid_hash_and_ignore_check_hash(self):
+        r = self.client.post(self.upload_url, {
+            'images[]': [
+                get_img_file(create_test_image(1000, 1000)),
+                get_img_file(create_test_image(900, 900)),
+                get_img_file(create_test_image(800, 800)),
+                get_img_file(create_test_image(700, 700)),
+            ],
+            'profile': 'simple0',
+            'label': 'world0',
+        })
+        self.assertEqual(r.status_code, 200)
+        d = self.get_json(r)
+        self.assertEqual(len(d['uploaded']), dju_settings.DJU_IMG_UPLOAD_MAX_FILES)
+        self.assertEqual(len(d['errors']), 0)
+        self.assertUploadedFilesExist(d)
+        for item in d['uploaded']:
+            for var_item in item['variants']:
+                # add file with invalid hash
+                rel_url = var_item['rel_url']
+                rel_url_new = re.sub(
+                    r'({suf})[a-z0-9]{{hs}}(_.+)'.replace(
+                        '{suf}', dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX
+                    ).replace(
+                        '{hs}', str(HASH_SIZE)
+                    ),
+                    r'\1{h}\2'.replace('{h}', 'z' * HASH_SIZE),
+                    rel_url
+                )
+                os.rename(
+                    os.path.join(settings.MEDIA_ROOT, rel_url).replace('\\', '/'),
+                    os.path.join(settings.MEDIA_ROOT, rel_url_new).replace('\\', '/')
+                )
+                var_item['rel_url'] = rel_url_new
+            r = get_files_by_img_id(item['img_id'], check_hash=False)
             self.assertEqual(r['main'], item['rel_url'])
             self.assertEqual(len(item['variants']), len(r['variants']))
             for var_label, ix in item['variants_by_label'].iteritems():

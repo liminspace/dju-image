@@ -157,7 +157,7 @@ variant_hash_label_re = re.compile(r'^.+?{suf}([a-z0-9]{{hs}})_(.+?)(?:|\.[A-Za-
 ))
 
 
-def get_files_by_img_id(img_id):
+def get_files_by_img_id(img_id, check_hash=True):
     """
     Шукає файли для img_id.
     Повертає:
@@ -168,6 +168,7 @@ def get_files_by_img_id(img_id):
             ...
         }
     }
+    Якщо check_hash=True, тоді файли з невірним хешем будуть ігноруватись.
     Якщо файл не існує, тоді поверає None.
     Пошук варіантів відбуваться в файловій системі не залежно від налаштувань.
     """
@@ -191,7 +192,7 @@ def get_files_by_img_id(img_id):
         if not m:
             continue
         var_hash, var_label = m.groups()
-        if var_hash != get_hash(img_name, var_label):
+        if check_hash and var_hash != get_hash(img_name, var_label):
             continue
         variants[var_label] = os.path.relpath(var_path, settings.MEDIA_ROOT)
     return {
