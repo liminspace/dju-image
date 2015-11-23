@@ -13,9 +13,9 @@ from . import settings as dju_settings
 
 
 ERROR_MESSAGES = {
-    'unknown_profile': ugettext_lazy('Unknown profile "%(profile)s".')
+    'unknown_profile': ugettext_lazy('Unknown profile "%(profile)s".'),
+    'filename_hasnt_tmp_prefix': ugettext_lazy('Filename "%(filename)s" has not temporary prefix.'),
 }
-
 
 HASH_SIZE = 10
 
@@ -222,41 +222,40 @@ def get_files_by_img_id(img_id, check_hash=True):
 #             os.remove(filepath)
 
 
-# def move_to_permalink(url, with_thumbs=True):  # todo remove it
-#     """
-#     Видаляє з файлу маркер тимчасовості.
-#     with_thumbs - шукати і застосовувати дану функцію на мініатюрах.
-#     """
-#     r = re.compile(r'^(.+?)(%s)(.+?)$' % dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX, re.I)
-#     url_m = r.match(url)
-#     if url_m:
-#         main_filename = get_filepath_of_url(url)
-#         if not os.path.isfile(main_filename):
-#             return url
-#         files = [main_filename]
-#         if with_thumbs:
-#             files.extend(get_thumbs_for_image(main_filename))
-#         for filepath in files:
-#             fn_m = r.match(filepath)
-#             if fn_m:
-#                 try:
-#                     os.rename(filepath, fn_m.group(1) + fn_m.group(3))
-#                 except EnvironmentError, e:
-#                     # pass  # todo додати логування помилки
-#                     raise e
-#             else:
-#                 pass  # todo додати логування неспівпадіння імені файлу до шаблону
-#         url = url_m.group(1) + url_m.group(3)
-#     return url
+def remove_tmp_prefix_from_filename(filename):
+    """
+    Remove tmp prefix from filename.
+    """
+    if not filename.startswith(dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX):
+        raise RuntimeError(ERROR_MESSAGES['filename_hasnt_tmp_prefix'] % {'filename': filename})
+    return filename[len(dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX):]
+
+
+def remove_tmp_prefix_from_file_path(file_path):
+    """
+    Remove tmp prefix from file path or url.
+    """
+    path, filename = os.path.split(file_path)
+    return os.path.join(path, remove_tmp_prefix_from_filename(filename)).replace('\\', '/')
 
 
 def make_permalink(img_id):
     """
-    Видаляє з назви файлу префікс DJU_IMG_UPLOAD_TMP_PREFIX
-    і перейменовує основний файл та всі його варіанти.
-    Повертає img_id без префікса DJU_IMG_UPLOAD_TMP_PREFIX.
+    Removes tmp prefix from filename and rename main and variant files.
+    Returns img_id without tmp prefix.
     """
-    pass  # todo make it
+    profile, filename = img_id.split(':', 1)
+    new_img_id = profile + ':' + remove_tmp_prefix_from_filename(filename)
+    urls = get_files_by_img_id(img_id)
+    move_list = {(urls['main'], remove_tmp_prefix_from_file_path(urls['main']))}
+    for var_label, var_file_path in urls['variants'].iteritems():
+        move_list.add((var_file_path, remove_tmp_prefix_from_file_path(var_file_path)))
+    for file_path_from, file_path_to in move_list:
+        os.rename(
+            os.path.join(settings.MEDIA_ROOT, file_path_from).replace('\\', '/'),
+            os.path.join(settings.MEDIA_ROOT, file_path_to).replace('\\', '/'),
+        )
+    return new_img_id
 
 
 def make_permalink_by_img_url(img_url):
@@ -264,4 +263,4 @@ def make_permalink_by_img_url(img_url):
     Те ж що make_permalink, тільки для url картинки.
     Повертає url картинки без префікса.
     """
-    pass  # todo make it
+    pass  # todo do it

@@ -6,7 +6,8 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from dju_image.image import image_get_format
 from dju_image.tools import (get_relative_path_from_img_id, generate_img_id, get_profile_configs,
-                             get_variant_label, save_file, get_files_by_img_id, HASH_SIZE)
+                             get_variant_label, save_file, get_files_by_img_id, HASH_SIZE,
+                             remove_tmp_prefix_from_filename, remove_tmp_prefix_from_file_path, make_permalink)
 from dju_image import settings as dju_settings
 from tests.tests.tools import get_img_file, create_test_image, clean_media_dir, ViewTestCase
 
@@ -387,3 +388,54 @@ class TestTools(ViewTestCase):
     def test_get_files_by_img_id_file_is_not_exists(self):
         r = get_files_by_img_id(generate_img_id('simple0'))
         self.assertIsNone(r)
+
+    def test_remove_tmp_prefix_from_filename(self):
+        fn = 'test_file_name.jpeg'
+        fn_tmp = dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX + fn
+        self.assertEqual(remove_tmp_prefix_from_filename(fn_tmp), fn)
+
+        with self.assertRaises(RuntimeError):
+            remove_tmp_prefix_from_filename(fn)
+
+    def test_remove_tmp_prefix_from_file_path(self):
+        fn = 'test_file_name.jpeg'
+        fn_tmp = dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX + fn
+        path = '/some/path/'
+        file_path = path + fn
+        file_path_tmp = path + fn_tmp
+        self.assertEqual(remove_tmp_prefix_from_file_path(file_path_tmp), file_path)
+
+        with self.assertRaises(RuntimeError):
+            remove_tmp_prefix_from_file_path(file_path)
+
+    def test_make_permalink(self):
+        r = self.client.post(self.upload_url, {
+            'images[]': [
+                get_img_file(create_test_image(1000, 1000)),
+                get_img_file(create_test_image(900, 900)),
+                get_img_file(create_test_image(800, 800)),
+                get_img_file(create_test_image(700, 700)),
+            ],
+            'profile': 'simple0',
+            'label': 'world0',
+        })
+        self.assertEqual(r.status_code, 200)
+        d = self.get_json(r)
+        self.assertEqual(len(d['uploaded']), dju_settings.DJU_IMG_UPLOAD_MAX_FILES)
+        self.assertEqual(len(d['errors']), 0)
+        self.assertUploadedFilesExist(d)
+        for item in d['uploaded']:
+            new_img_id = make_permalink(item['img_id'])
+            files = get_files_by_img_id(new_img_id)
+            self.assertEqual(files['main'], remove_tmp_prefix_from_file_path(item['rel_url']))
+            new_item = {
+                'rel_url': files['main'],
+                'variants': [],
+            }
+            for var_label, var_ix in item['variants_by_label'].iteritems():
+                self.assertEqual(
+                    files['variants'][var_label],
+                    remove_tmp_prefix_from_file_path(item['variants'][var_ix]['rel_url'])
+                )
+                new_item['variants'].append({'rel_url': files['variants'][var_label]})
+            self.assertUploadedFilesExist({'uploaded': [new_item]})
