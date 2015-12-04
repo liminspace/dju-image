@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.http import QueryDict
 from django.template import Template, Context
 from django.test import TestCase
@@ -12,22 +13,132 @@ class TestTemplatetagsDjUtils(TestCase):
     def get_tpl_f(self, tpl, context=None):
         return lambda: Template('{% load dju_image %}' + tpl).render(Context(context))
 
-    # def test_make_thumb_url(self):  # todo do it
-    #     suf = dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX
+    def test_dju_img_url_with_as(self):
+        # main image without label
+        t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7.jpeg' as v %}{{ v }}")
+        self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}94c41774a6.jpeg'.format(
+            settings.MEDIA_URL,
+            dju_settings.DJU_IMG_UPLOAD_MAIN_SUFFIX,
+        ))
+        t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7' as v %}{{ v }}")
+        self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}94c41774a6'.format(
+            settings.MEDIA_URL,
+            dju_settings.DJU_IMG_UPLOAD_MAIN_SUFFIX,
+        ))
+        t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7' ext='jpeg' as v %}{{ v }}")
+        self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}94c41774a6.jpeg'.format(
+            settings.MEDIA_URL,
+            dju_settings.DJU_IMG_UPLOAD_MAIN_SUFFIX,
+        ))
+        t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7.png' ext='jpeg' as v %}{{ v }}")
+        self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}94c41774a6.jpeg'.format(
+            settings.MEDIA_URL,
+            dju_settings.DJU_IMG_UPLOAD_MAIN_SUFFIX,
+        ))
+        t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7' ext='.jpeg' as v %}{{ v }}")
+        self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}94c41774a6.jpeg'.format(
+            settings.MEDIA_URL,
+            dju_settings.DJU_IMG_UPLOAD_MAIN_SUFFIX,
+        ))
+        t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7.png' ext='.jpeg' as v %}{{ v }}")
+        self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}94c41774a6.jpeg'.format(
+            settings.MEDIA_URL,
+            dju_settings.DJU_IMG_UPLOAD_MAIN_SUFFIX,
+        ))
+
+        # main image with label
+        t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7.jpeg' label='lab1' as v %}{{ v }}")
+        self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}38728b6f68_lab1.jpeg'.format(
+            settings.MEDIA_URL,
+            dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX,
+        ))
+        t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7' label='lab1' as v %}{{ v }}")
+        self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}38728b6f68_lab1'.format(
+            settings.MEDIA_URL,
+            dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX,
+        ))
+        t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7' label='lab1' ext='jpeg' as v %}{{ v }}")
+        self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}38728b6f68_lab1.jpeg'.format(
+            settings.MEDIA_URL,
+            dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX,
+        ))
+        t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7.png' label='lab1' ext='jpeg' as v %}{{ v }}")
+        self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}38728b6f68_lab1.jpeg'.format(
+            settings.MEDIA_URL,
+            dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX,
+        ))
+        t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7' label='lab1' ext='.jpeg' as v %}{{ v }}")
+        self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}38728b6f68_lab1.jpeg'.format(
+            settings.MEDIA_URL,
+            dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX,
+        ))
+        t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7.png' label='lab1' ext='.jpeg' as v %}{{ v }}")
+        self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}38728b6f68_lab1.jpeg'.format(
+            settings.MEDIA_URL,
+            dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX,
+        ))
+
+    # def test_dju_img_url(self):  # todo uncomment after migrate to django 1.9
+    #     # main image without label
+    #     t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7.jpeg' %}")
+    #     self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}94c41774a6.jpeg'.format(
+    #         settings.MEDIA_URL,
+    #         dju_settings.DJU_IMG_UPLOAD_MAIN_SUFFIX,
+    #     ))
+    #     t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7' %}")
+    #     self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}94c41774a6'.format(
+    #         settings.MEDIA_URL,
+    #         dju_settings.DJU_IMG_UPLOAD_MAIN_SUFFIX,
+    #     ))
+    #     t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7' ext='jpeg' %}")
+    #     self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}94c41774a6.jpeg'.format(
+    #         settings.MEDIA_URL,
+    #         dju_settings.DJU_IMG_UPLOAD_MAIN_SUFFIX,
+    #     ))
+    #     t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7.png' ext='jpeg' %}")
+    #     self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}94c41774a6.jpeg'.format(
+    #         settings.MEDIA_URL,
+    #         dju_settings.DJU_IMG_UPLOAD_MAIN_SUFFIX,
+    #     ))
+    #     t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7' ext='.jpeg' %}")
+    #     self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}94c41774a6.jpeg'.format(
+    #         settings.MEDIA_URL,
+    #         dju_settings.DJU_IMG_UPLOAD_MAIN_SUFFIX,
+    #     ))
+    #     t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7.png' ext='.jpeg' %}")
+    #     self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}94c41774a6.jpeg'.format(
+    #         settings.MEDIA_URL,
+    #         dju_settings.DJU_IMG_UPLOAD_MAIN_SUFFIX,
+    #     ))
     #
-    #     t = self.get_tpl_f("{% make_thumb_url '/media/a/b/abc.jpeg' as v %}{{ v }}")
-    #     self.assertEqual(t(), '/media/a/b/abc{suf}.jpeg'.format(suf=suf))
-    #
-    #     t = self.get_tpl_f(
-    #         "{% make_thumb_url '/media/a/b/abc{suf}.jpeg' as v %}{{ v }}".replace('{suf}', suf)
-    #     )
-    #     self.assertEqual(t(), '/media/a/b/abc{suf}.jpeg'.format(suf=suf))
-    #
-    #     t = self.get_tpl_f("{% make_thumb_url '/media/a/b/abc.dat' label='tst' ext='png' as v %}{{ v }}")
-    #     self.assertEqual(t(), '/media/a/b/abc{suf}tst.png'.format(suf=suf))
-    #
-    #     t = self.get_tpl_f("{% make_thumb_url '/media/a/b/abc.dat' label='tst' ext='png' as v %}{{ v }}")
-    #     self.assertEqual(t(), '/media/a/b/abc{suf}tst.png'.format(suf=suf))
-    #
-    #     t = self.get_tpl_f("{% make_thumb_url '/media/a/b/abc.dat' label='tst' ext='.png' as v %}{{ v }}")
-    #     self.assertEqual(t(), '/media/a/b/abc{suf}tst.png'.format(suf=suf))
+    #     # main image with label
+    #     t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7.jpeg' label='lab1' %}")
+    #     self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}38728b6f68_lab1.jpeg'.format(
+    #         settings.MEDIA_URL,
+    #         dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX,
+    #     ))
+    #     t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7' label='lab1' %}")
+    #     self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}38728b6f68_lab1'.format(
+    #         settings.MEDIA_URL,
+    #         dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX,
+    #     ))
+    #     t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7' label='lab1' ext='jpeg' %}")
+    #     self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}38728b6f68_lab1.jpeg'.format(
+    #         settings.MEDIA_URL,
+    #         dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX,
+    #     ))
+    #     t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7.png' label='lab1' ext='jpeg' %}")
+    #     self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}38728b6f68_lab1.jpeg'.format(
+    #         settings.MEDIA_URL,
+    #         dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX,
+    #     ))
+    #     t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7' label='lab1' ext='.jpeg' %}")
+    #     self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}38728b6f68_lab1.jpeg'.format(
+    #         settings.MEDIA_URL,
+    #         dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX,
+    #     ))
+    #     t = self.get_tpl_f("{% dju_img_url 'simple1:ihrtfelu_c5e7.png' label='lab1' ext='.jpeg' %}")
+    #     self.assertEqual(t(), '{}upload-img/s1/lu/ihrtfelu_c5e7{}38728b6f68_lab1.jpeg'.format(
+    #         settings.MEDIA_URL,
+    #         dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX,
+    #     ))
