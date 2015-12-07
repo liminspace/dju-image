@@ -108,6 +108,12 @@ class TestAdjustImage(ImageCase):
             self.assertIsInstance(t, (cStringIO.InputType, cStringIO.OutputType))
             self.assertEqual(Image.open(t).mode, 'RGB')
 
+            img_200x200_p = create_test_image(200, 200, c='P')
+            f_200x200_png_p = get_img_file(img_200x200_p, img_format='PNG')
+            t = adjust_image(f_200x200_png_p, new_format='JPEG', return_new_image=True)
+            self.assertIsInstance(t, (cStringIO.InputType, cStringIO.OutputType))
+            self.assertEqual(Image.open(t).mode, 'RGB')
+
         with safe_change_dju_settings():
             dju_settings.DJU_IMG_CONVERT_JPEG_TO_RGB = True
             tests()

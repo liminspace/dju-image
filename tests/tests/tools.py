@@ -17,6 +17,7 @@ def create_test_image(w, h, c='RGB'):
     colors = {
         'RGB': {1: '#DDEEFF', 2: '#667788', 3: '#887766'},
         'CMYK': {1: (120, 130, 140, 25), 2: (80, 100, 120, 50), 3: (120, 100, 80, 75)},
+        'P': {1: '#DDEEFF', 2: '#667788', 3: '#887766'},
     }
     color = colors[c]
     img = Image.new(c, (w, h), color=color[1])

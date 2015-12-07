@@ -71,7 +71,7 @@ def image_save_buffer_fix(maxblock=1048576):
         ImageFile.MAXBLOCK = before
 
 
-def _save_img(img, f, *args, **kwargs):
+def _save_img(img, f, img_format, **kwargs):
     if isinstance(f, UploadedFile):
         f = f.file
     modes = ({},
@@ -81,6 +81,10 @@ def _save_img(img, f, *args, **kwargs):
              {'mb_x': 10, 'disable_optimize': True, 'disable_progressive': True})
     maxblock = max(ImageFile.MAXBLOCK, img.size[0] * img.size[1])
     last_error = None
+    if img_format.upper() == 'JPEG' and img.mode != 'RGB':
+        current_format = img.format
+        img = img.convert('RGB')
+        img.format = current_format
     for mode in modes:
         try:
             kw = kwargs.copy()
@@ -89,7 +93,7 @@ def _save_img(img, f, *args, **kwargs):
             if mode.get('disable_progressive'):
                 kw.pop('progressive')
             with image_save_buffer_fix(maxblock * mode.get('mb_x', 1)):
-                img.save(f, *args, **kw)
+                img.save(f, format=img_format, **kw)
                 last_error = None
                 break
         except IOError, e:
@@ -178,15 +182,17 @@ def adjust_image(f, max_size=(800, 800), new_format=None, jpeg_quality=90, fill=
             raise RuntimeError('Invalid new_format value.')
     f.seek(0)
     img = Image.open(f)
-    if img.format == 'JPEG' and img.mode != 'RGB':
+    if ((new_format == 'jpeg' and img.mode != 'RGB') or
+            (new_format is None and img.format == 'JPEG' and img.mode != 'RGB')):
         do_convert = True
         if dju_settings.DJU_IMG_CONVERT_JPEG_TO_RGB:
             img = get_image_as_rgb(f)
             if img is not None:
                 do_convert = False
         if do_convert:
+            current_format = img.format
             img = img.convert('RGB')
-            img.format = 'JPEG'
+            img.format = current_format
     max_width, max_height = max_size
     img_width, img_height = img.size
     img_format = img.format.lower()
@@ -227,12 +233,12 @@ def adjust_image(f, max_size=(800, 800), new_format=None, jpeg_quality=90, fill=
         ch_format = True
     if return_new_image:
         t = StringIO()
-        _save_img(img, t, format=img_format, quality=jpeg_quality, progressive=True, optimize=True)
+        _save_img(img, t, img_format=img_format, quality=jpeg_quality, progressive=True, optimize=True)
         return t
     if ch_size or ch_format:
         img.load()
         truncate_file(f)
-        _save_img(img, f, format=img_format, quality=jpeg_quality, progressive=True, optimize=True)
+        _save_img(img, f, img_format=img_format, quality=jpeg_quality, progressive=True, optimize=True)
         if isinstance(f, UploadedFile):
             f.seek(0, 2)
             f.size = f.tell()
