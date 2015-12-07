@@ -6,9 +6,10 @@ from PIL import Image
 from django.conf import settings
 from django.core.files.uploadedfile import UploadedFile
 from django.test import TestCase
+from dju_image import settings as dju_settings
 from dju_image.image import (adjust_image, image_get_format, is_image, optimize_png_file,
                              set_uploaded_file_content_type_and_file_ext)
-from tests.tests.tools import create_test_image, get_img_file, save_img_file
+from tests.tests.tools import create_test_image, get_img_file, save_img_file, safe_change_dju_settings
 
 
 class ImageCase(TestCase):
@@ -100,11 +101,20 @@ class TestAdjustImage(ImageCase):
                               (cStringIO.InputType, cStringIO.OutputType))
 
     def test_cmyk_to_rgb(self):
-        img_200x200_cmyk = create_test_image(200, 200, c='CMYK')
-        f_200x200_jpeg_cmyk = get_img_file(img_200x200_cmyk)
-        t = adjust_image(f_200x200_jpeg_cmyk, return_new_image=True)
-        self.assertIsInstance(t, (cStringIO.InputType, cStringIO.OutputType))
-        self.assertEqual(Image.open(t).mode, 'RGB')
+        def tests():
+            img_200x200_cmyk = create_test_image(200, 200, c='CMYK')
+            f_200x200_jpeg_cmyk = get_img_file(img_200x200_cmyk)
+            t = adjust_image(f_200x200_jpeg_cmyk, return_new_image=True)
+            self.assertIsInstance(t, (cStringIO.InputType, cStringIO.OutputType))
+            self.assertEqual(Image.open(t).mode, 'RGB')
+
+        with safe_change_dju_settings():
+            dju_settings.DJU_IMG_CONVERT_JPEG_TO_RGB = True
+            tests()
+
+        with safe_change_dju_settings():
+            dju_settings.DJU_IMG_CONVERT_JPEG_TO_RGB = False
+            tests()
 
     def test_adjust_image_invalid_new_format(self):
         self.make_files_for_images()

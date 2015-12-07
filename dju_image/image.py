@@ -178,8 +178,15 @@ def adjust_image(f, max_size=(800, 800), new_format=None, jpeg_quality=90, fill=
             raise RuntimeError('Invalid new_format value.')
     f.seek(0)
     img = Image.open(f)
-    if img.format == 'JPEG' and img.mode == 'CMYK' and dju_settings.DJU_IMG_CONVERT_JPEG_TO_RGB:
-        img = get_image_as_rgb(f) or img
+    if img.format == 'JPEG' and img.mode != 'RGB':
+        do_convert = True
+        if dju_settings.DJU_IMG_CONVERT_JPEG_TO_RGB:
+            img = get_image_as_rgb(f)
+            if img is not None:
+                do_convert = False
+        if do_convert:
+            img = img.convert('RGB')
+            img.format = 'JPEG'
     max_width, max_height = max_size
     img_width, img_height = img.size
     img_format = img.format.lower()
