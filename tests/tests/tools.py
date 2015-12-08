@@ -88,6 +88,6 @@ class ViewTestCase(TestCase):
         for item in response_data['uploaded']:
             path = os.path.join(settings.MEDIA_ROOT, item['rel_url']).replace('\\', '/')
             self.assertTrue(os.path.isfile(path))
-            for var_item in item['variants']:
-                var_path = os.path.join(settings.MEDIA_ROOT, var_item['rel_url']).replace('\\', '/')
+            for var_data in item['variants'].values():
+                var_path = os.path.join(settings.MEDIA_ROOT, var_data['rel_url']).replace('\\', '/')
                 self.assertTrue(os.path.isfile(var_path))

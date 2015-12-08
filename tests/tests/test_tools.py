@@ -234,8 +234,8 @@ class TestTools(ViewTestCase):
             r = get_files_by_img_id(item['img_id'])
             self.assertEqual(r['main'], item['rel_url'])
             self.assertEqual(len(item['variants']), len(r['variants']))
-            for var_label, ix in item['variants_by_label'].iteritems():
-                self.assertEqual(r['variants'][var_label], item['variants'][ix]['rel_url'])
+            for var_label, var_data in item['variants'].iteritems():
+                self.assertEqual(r['variants'][var_label], var_data['rel_url'])
 
         r = self.client.post(self.upload_url, {
             'images[]': [
@@ -256,8 +256,8 @@ class TestTools(ViewTestCase):
             r = get_files_by_img_id(item['img_id'])
             self.assertEqual(r['main'], item['rel_url'])
             self.assertEqual(len(item['variants']), len(r['variants']))
-            for var_label, ix in item['variants_by_label'].iteritems():
-                self.assertEqual(r['variants'][var_label], item['variants'][ix]['rel_url'])
+            for var_label, var_data in item['variants'].iteritems():
+                self.assertEqual(r['variants'][var_label], var_data['rel_url'])
 
     def test_get_files_by_img_id_removed_variants_ext(self):
         r = self.client.post(self.upload_url, {
@@ -276,20 +276,21 @@ class TestTools(ViewTestCase):
         self.assertEqual(len(d['errors']), 0)
         self.assertUploadedFilesExist(d)
         for item in d['uploaded']:
-            for i in xrange(len(item['variants'])):
+            # for i in xrange(len(item['variants'])):
+            for var_data in item['variants'].values():
                 # remove ext for all variants files
-                rel_url = item['variants'][i]['rel_url']
+                rel_url = var_data['rel_url']
                 rel_url_new = os.path.splitext(rel_url)[0]
                 os.rename(
                     os.path.join(settings.MEDIA_ROOT, rel_url).replace('\\', '/'),
                     os.path.join(settings.MEDIA_ROOT, rel_url_new).replace('\\', '/')
                 )
-                item['variants'][i]['rel_url'] = rel_url_new
+                var_data['rel_url'] = rel_url_new
             r = get_files_by_img_id(item['img_id'])
             self.assertEqual(r['main'], item['rel_url'])
             self.assertEqual(len(item['variants']), len(r['variants']))
-            for var_label, ix in item['variants_by_label'].iteritems():
-                self.assertEqual(r['variants'][var_label], item['variants'][ix]['rel_url'])
+            for var_label, var_data in item['variants'].iteritems():
+                self.assertEqual(r['variants'][var_label], var_data['rel_url'])
 
     def test_get_files_by_img_id_with_invalid_hash_and_filename_pattern(self):
         r = self.client.post(self.upload_url, {
@@ -308,9 +309,9 @@ class TestTools(ViewTestCase):
         self.assertEqual(len(d['errors']), 0)
         self.assertUploadedFilesExist(d)
         for item in d['uploaded']:
-            for var_item in item['variants']:
+            for var_data in item['variants'].values():
                 # add file with invalid hash
-                rel_url = var_item['rel_url']
+                rel_url = var_data['rel_url']
                 rel_url_new = re.sub(
                     r'({suf})[a-z0-9]{{hs}}(_.+)'.replace(
                         '{suf}', dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX
@@ -325,7 +326,7 @@ class TestTools(ViewTestCase):
                     os.path.join(settings.MEDIA_ROOT, rel_url_new).replace('\\', '/')
                 )
                 # add file with invalid filename pattern
-                rel_url = var_item['rel_url']
+                rel_url = var_data['rel_url']
                 rel_url_new = re.sub(
                     r'({suf})[a-z0-9]{{hs}}(_.+)'.replace(
                         '{suf}', dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX
@@ -342,8 +343,8 @@ class TestTools(ViewTestCase):
             r = get_files_by_img_id(item['img_id'])
             self.assertEqual(r['main'], item['rel_url'])
             self.assertEqual(len(item['variants']), len(r['variants']))
-            for var_label, ix in item['variants_by_label'].iteritems():
-                self.assertEqual(r['variants'][var_label], item['variants'][ix]['rel_url'])
+            for var_label, var_data in item['variants'].iteritems():
+                self.assertEqual(r['variants'][var_label], var_data['rel_url'])
 
     def test_get_files_by_img_id_with_invalid_hash_and_ignore_check_hash(self):
         r = self.client.post(self.upload_url, {
@@ -362,9 +363,9 @@ class TestTools(ViewTestCase):
         self.assertEqual(len(d['errors']), 0)
         self.assertUploadedFilesExist(d)
         for item in d['uploaded']:
-            for var_item in item['variants']:
+            for var_data in item['variants'].values():
                 # add file with invalid hash
-                rel_url = var_item['rel_url']
+                rel_url = var_data['rel_url']
                 rel_url_new = re.sub(
                     r'({suf})[a-z0-9]{{hs}}(_.+)'.replace(
                         '{suf}', dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX
@@ -378,12 +379,12 @@ class TestTools(ViewTestCase):
                     os.path.join(settings.MEDIA_ROOT, rel_url).replace('\\', '/'),
                     os.path.join(settings.MEDIA_ROOT, rel_url_new).replace('\\', '/')
                 )
-                var_item['rel_url'] = rel_url_new
+                var_data['rel_url'] = rel_url_new
             r = get_files_by_img_id(item['img_id'], check_hash=False)
             self.assertEqual(r['main'], item['rel_url'])
             self.assertEqual(len(item['variants']), len(r['variants']))
-            for var_label, ix in item['variants_by_label'].iteritems():
-                self.assertEqual(r['variants'][var_label], item['variants'][ix]['rel_url'])
+            for var_label, var_data in item['variants'].iteritems():
+                self.assertEqual(r['variants'][var_label], var_data['rel_url'])
 
     def test_get_files_by_img_id_file_is_not_exists(self):
         r = get_files_by_img_id(generate_img_id('simple0'))
@@ -430,12 +431,12 @@ class TestTools(ViewTestCase):
             self.assertEqual(files['main'], remove_tmp_prefix_from_file_path(item['rel_url']))
             new_item = {
                 'rel_url': files['main'],
-                'variants': [],
+                'variants': {},
             }
-            for var_label, var_ix in item['variants_by_label'].iteritems():
+            for var_label, var_data in item['variants'].iteritems():
                 self.assertEqual(
                     files['variants'][var_label],
-                    remove_tmp_prefix_from_file_path(item['variants'][var_ix]['rel_url'])
+                    remove_tmp_prefix_from_file_path(var_data['rel_url'])
                 )
-                new_item['variants'].append({'rel_url': files['variants'][var_label]})
+                new_item['variants'][var_label] = {'rel_url': files['variants'][var_label]}
             self.assertUploadedFilesExist({'uploaded': [new_item]})

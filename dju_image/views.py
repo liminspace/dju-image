@@ -35,15 +35,11 @@ def upload_image(request):
                     'url': 'повний url до головного файла',
                     'rel_url': 'відносний від MEDIA url головного файла',
                     'img_id': 'ідентифікатор для збереження в БД',  // 'profilename:abcdef_abcd_label.png',
-                    'variants': [
-                        {
+                    'variants': {
+                        'variant label': {
                             'url': 'повний url до варіанта',
                             'rel_url': 'відносний від MEDIA url головного файла'
                         },
-                        ...
-                    ],
-                    'variants_by_label': {
-                        'variant label': index in variants,
                         ...
                     }
                 },
@@ -83,10 +79,9 @@ def upload_image(request):
             'url': settings.MEDIA_URL + relative_path,
             'rel_url': relative_path,
             'img_id': img_id,
-            'variants': [],
-            'variants_by_label': {},
+            'variants': {},
         }
-        for ix, v_conf in enumerate(conf['VARIANTS']):
+        for v_conf in conf['VARIANTS']:
             label = v_conf['LABEL']
             if not label:
                 label = get_variant_label(v_conf)
@@ -96,10 +91,9 @@ def upload_image(request):
             v_relative_path = get_relative_path_from_img_id(img_id, variant_label=label, ext=image_get_format(v_f))
             v_full_path = os.path.join(settings.MEDIA_ROOT, v_relative_path).replace('\\', '/')
             save_file(v_f, v_full_path)
-            data['variants'].append({
+            data['variants'][label] = {
                 'url': settings.MEDIA_URL + v_relative_path,
                 'rel_url': v_relative_path,
-            })
-            data['variants_by_label'][label] = ix
+            }
         result['uploaded'].append(data)
     return send_json(result)

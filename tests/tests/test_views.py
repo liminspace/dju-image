@@ -53,14 +53,11 @@ class TestViews(ViewTestCase):
         self.assertIn('rel_url', item)
         self.assertIn('img_id', item)
         self.assertIn('variants', item)
-        self.assertIn('variants_by_label', item)
         self.assertIsInstance(item['url'], basestring)
         self.assertIsInstance(item['rel_url'], basestring)
         self.assertIsInstance(item['img_id'], basestring)
-        self.assertIsInstance(item['variants'], list)
-        self.assertIsInstance(item['variants_by_label'], dict)
+        self.assertIsInstance(item['variants'], dict)
         self.assertEqual(len(item['variants']), 0)
-        self.assertEqual(len(item['variants_by_label']), 0)
         self.assertTrue(item['img_id'].startswith('default:' + dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX))
         self.assertTrue(item['img_id'].endswith('.jpeg'))
         self.assertEqual(get_relative_path_from_img_id(item['img_id']), item['rel_url'])
@@ -127,21 +124,15 @@ class TestViews(ViewTestCase):
             variants = d['uploaded'][0]['variants']
             self.assertEqual(len(variants), 4)
             name = os.path.splitext(d['uploaded'][0]['img_id'])[0].split(':', 1)[1]
-            for item in variants:
-                self.assertIsInstance(item['url'], basestring)
-                self.assertIsInstance(item['rel_url'], basestring)
-                self.assertIn(name, item['url'])
-                self.assertIn(name, item['rel_url'])
-            self.assertTrue(variants[0]['url'].endswith('_20x30.jpeg'))
-            self.assertTrue(variants[1]['url'].endswith('_w20.jpeg'))
-            self.assertTrue(variants[2]['url'].endswith('_h30.jpeg'))
-            self.assertTrue(variants[3]['url'].endswith('_lab1.jpeg'))
-            variants_by_label = d['uploaded'][0]['variants_by_label']
-            self.assertEqual(len(variants_by_label), 4)
-            self.assertEqual(variants_by_label['20x30'], 0)
-            self.assertEqual(variants_by_label['w20'], 1)
-            self.assertEqual(variants_by_label['h30'], 2)
-            self.assertEqual(variants_by_label['lab1'], 3)
+            for var_data in variants.values():
+                self.assertIsInstance(var_data['url'], basestring)
+                self.assertIsInstance(var_data['rel_url'], basestring)
+                self.assertIn(name, var_data['url'])
+                self.assertIn(name, var_data['rel_url'])
+            self.assertTrue(variants['20x30']['url'].endswith('_20x30.jpeg'))
+            self.assertTrue(variants['w20']['url'].endswith('_w20.jpeg'))
+            self.assertTrue(variants['h30']['url'].endswith('_h30.jpeg'))
+            self.assertTrue(variants['lab1']['url'].endswith('_lab1.jpeg'))
             self.assertUploadedFilesExist(d)
 
     def test_upload_image_multiple_files(self):
