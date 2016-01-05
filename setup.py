@@ -19,7 +19,7 @@ setup(
     zip_safe=False,  # тому, що вкладаємо статику
     install_requires=[
         'dju-common',
-        'django<1.9',
+        'django<1.10',
         'simplejson',
         'Pillow',
     ],
