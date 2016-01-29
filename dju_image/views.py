@@ -1,12 +1,11 @@
 # coding=utf-8
-import os
 from django.conf import settings
 from django.http import HttpResponseNotAllowed
 from django.utils.translation import ugettext_lazy
 from dju_common.http import send_json
 from dju_image.image import image_get_format, adjust_image, is_image
 from dju_image.tools import (get_profile_configs, save_file, generate_img_id,
-                             get_relative_path_from_img_id, get_variant_label)
+                             get_relative_path_from_img_id, get_variant_label, media_path)
 from dju_image import settings as dju_settings
 
 
@@ -73,7 +72,7 @@ def upload_image(request):
                      jpeg_quality=conf['JPEG_QUALITY'], fill=conf['FILL'], stretch=conf['STRETCH'])
         img_id = generate_img_id(profile, ext=image_get_format(f), label=request.POST.get('label'), tmp=True)
         relative_path = get_relative_path_from_img_id(img_id)
-        full_path = os.path.join(settings.MEDIA_ROOT, relative_path).replace('\\', '/')
+        full_path = media_path(relative_path)
         save_file(f, full_path)
         data = {
             'url': settings.MEDIA_URL + relative_path,
@@ -89,7 +88,7 @@ def upload_image(request):
                                jpeg_quality=v_conf['JPEG_QUALITY'], fill=v_conf['FILL'], stretch=v_conf['STRETCH'],
                                return_new_image=True)
             v_relative_path = get_relative_path_from_img_id(img_id, variant_label=label, ext=image_get_format(v_f))
-            v_full_path = os.path.join(settings.MEDIA_ROOT, v_relative_path).replace('\\', '/')
+            v_full_path = media_path(v_relative_path)
             save_file(v_f, v_full_path)
             data['variants'][label] = {
                 'url': settings.MEDIA_URL + v_relative_path,

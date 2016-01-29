@@ -27,6 +27,10 @@ def clear_profile_configs_cache():
     _profile_configs_cache.clear()
 
 
+def media_path(path):
+    return os.path.join(settings.MEDIA_ROOT, path).replace('\\', '/')
+
+
 def save_file(f, full_path):
     """
     Saves file f to full_path and set rules.
@@ -134,7 +138,7 @@ def get_relative_path_from_img_id(img_id, variant_label=None, ext=None, create_d
         (prefix + name + file_ext)
     ).replace('\\', '/')
     if create_dirs:
-        path = os.path.join(settings.MEDIA_ROOT, relative_path).replace('\\', '/')
+        path = media_path(relative_path)
         make_dirs_for_file_path(path, mode=dju_settings.DJU_IMG_CHMOD_DIR)
     return relative_path
 
@@ -144,7 +148,7 @@ def is_img_id_exists(img_id):
     Checks if img_id has real file on filesystem.
     """
     main_rel_path = get_relative_path_from_img_id(img_id)
-    main_path = os.path.join(settings.MEDIA_ROOT, main_rel_path).replace('\\', '/')
+    main_path = media_path(main_rel_path)
     return os.path.isfile(main_path)
 
 
@@ -200,7 +204,7 @@ def get_files_by_img_id(img_id, check_hash=True):
     Пошук варіантів відбуваться в файловій системі не залежно від налаштувань.
     """
     main_rel_path = get_relative_path_from_img_id(img_id)
-    main_path = os.path.join(settings.MEDIA_ROOT, main_rel_path).replace('\\', '/')
+    main_path = media_path(main_rel_path)
     if not os.path.isfile(main_path):
         return None
     filename = os.path.basename(main_rel_path)
@@ -226,6 +230,17 @@ def get_files_by_img_id(img_id, check_hash=True):
         'main': main_rel_path,
         'variants': variants,
     }
+
+
+def remove_all_files_of_img_id(img_id):
+    """
+    Removes all img_id's files.
+    """
+    files = get_files_by_img_id(img_id, check_hash=False)
+    if files:
+        os.remove(media_path(files['main']))
+        for fn in files['variants'].values():
+            os.remove(media_path(fn))
 
 
 # def get_filepath_of_url(url):  # todo remove it
@@ -278,10 +293,7 @@ def make_permalink(img_id):
     for var_label, var_file_path in urls['variants'].iteritems():
         move_list.add((var_file_path, remove_tmp_prefix_from_file_path(var_file_path)))
     for file_path_from, file_path_to in move_list:
-        os.rename(
-            os.path.join(settings.MEDIA_ROOT, file_path_from).replace('\\', '/'),
-            os.path.join(settings.MEDIA_ROOT, file_path_to).replace('\\', '/'),
-        )
+        os.rename(media_path(file_path_from), media_path(file_path_to))
     return new_img_id
 
 

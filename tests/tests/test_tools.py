@@ -2,13 +2,12 @@ import hashlib
 import os
 import re
 import shutil
-from django.conf import settings
 from django.core.urlresolvers import reverse
 from dju_image.image import image_get_format
 from dju_image.tools import (get_relative_path_from_img_id, generate_img_id, get_profile_configs,
                              get_variant_label, save_file, get_files_by_img_id, HASH_SIZE,
                              remove_tmp_prefix_from_filename, remove_tmp_prefix_from_file_path, make_permalink,
-                             is_img_id_exists, is_img_id_valid)
+                             is_img_id_exists, is_img_id_valid, remove_all_files_of_img_id, media_path)
 from dju_image import settings as dju_settings
 from tests.tests.tools import get_img_file, create_test_image, clean_media_dir, ViewTestCase
 
@@ -180,7 +179,7 @@ class TestTools(ViewTestCase):
             get_relative_path_from_img_id('default:__t_abcde1234_ab12_myname.jpeg', create_dirs=True),
             'upload-img/common/34/__t_abcde1234_ab12_myname__m_93c87b2a66.jpeg'
         )
-        self.assertTrue(os.path.isdir(os.path.join(settings.MEDIA_ROOT, 'upload-img/common/34')))
+        self.assertTrue(os.path.isdir(media_path('upload-img/common/34')))
 
     def test_get_profile_configs(self):
         c = get_profile_configs('simple1')
@@ -206,7 +205,7 @@ class TestTools(ViewTestCase):
         f = get_img_file(create_test_image(1000, 1000))
         img_id = generate_img_id('simple1', ext=image_get_format(f), label='test-save-file')
         relative_path = get_relative_path_from_img_id(img_id)
-        full_path = os.path.join(settings.MEDIA_ROOT, relative_path).replace('\\', '/')
+        full_path = media_path(relative_path)
         save_file(f, full_path)
         file_exists = os.path.exists(full_path)
         self.assertTrue(file_exists)
@@ -282,10 +281,7 @@ class TestTools(ViewTestCase):
                 # remove ext for all variants files
                 rel_url = var_data['rel_url']
                 rel_url_new = os.path.splitext(rel_url)[0]
-                os.rename(
-                    os.path.join(settings.MEDIA_ROOT, rel_url).replace('\\', '/'),
-                    os.path.join(settings.MEDIA_ROOT, rel_url_new).replace('\\', '/')
-                )
+                os.rename(media_path(rel_url), media_path(rel_url_new))
                 var_data['rel_url'] = rel_url_new
             r = get_files_by_img_id(item['img_id'])
             self.assertEqual(r['main'], item['rel_url'])
@@ -322,10 +318,7 @@ class TestTools(ViewTestCase):
                     r'\1{h}\2'.replace('{h}', 'z' * HASH_SIZE),
                     rel_url
                 )
-                shutil.copy(
-                    os.path.join(settings.MEDIA_ROOT, rel_url).replace('\\', '/'),
-                    os.path.join(settings.MEDIA_ROOT, rel_url_new).replace('\\', '/')
-                )
+                shutil.copy(media_path(rel_url), media_path(rel_url_new))
                 # add file with invalid filename pattern
                 rel_url = var_data['rel_url']
                 rel_url_new = re.sub(
@@ -337,10 +330,7 @@ class TestTools(ViewTestCase):
                     r'\1{h}\2'.replace('{h}', 'z' * (HASH_SIZE + 1)),
                     rel_url
                 )
-                shutil.copy(
-                    os.path.join(settings.MEDIA_ROOT, rel_url).replace('\\', '/'),
-                    os.path.join(settings.MEDIA_ROOT, rel_url_new).replace('\\', '/')
-                )
+                shutil.copy(media_path(rel_url), media_path(rel_url_new))
             r = get_files_by_img_id(item['img_id'])
             self.assertEqual(r['main'], item['rel_url'])
             self.assertEqual(len(item['variants']), len(r['variants']))
@@ -376,10 +366,7 @@ class TestTools(ViewTestCase):
                     r'\1{h}\2'.replace('{h}', 'z' * HASH_SIZE),
                     rel_url
                 )
-                os.rename(
-                    os.path.join(settings.MEDIA_ROOT, rel_url).replace('\\', '/'),
-                    os.path.join(settings.MEDIA_ROOT, rel_url_new).replace('\\', '/')
-                )
+                os.rename(media_path(rel_url), media_path(rel_url_new))
                 var_data['rel_url'] = rel_url_new
             r = get_files_by_img_id(item['img_id'], check_hash=False)
             self.assertEqual(r['main'], item['rel_url'])
@@ -479,3 +466,35 @@ class TestTools(ViewTestCase):
         self.assertFalse(is_img_id_valid('default:abcde1234_ab12..jpeg'))
         self.assertFalse(is_img_id_valid('default:abcd/e1234_ab12.jpeg'))
         self.assertFalse(is_img_id_valid('default:../../../abcde1234_ab12..jpeg'))
+
+    def test_remove_all_files_of_img_id(self):
+        r1 = self.client.post(self.upload_url, {
+            'images[]': [
+                get_img_file(create_test_image(800, 800)),
+            ],
+            'profile': 'simple0',
+            'label': 'world0',
+        })
+        self.assertEqual(r1.status_code, 200)
+        d1 = self.get_json(r1)
+        self.assertEqual(len(d1['errors']), 0)
+        self.assertUploadedFilesExist(d1)
+
+        r2 = self.client.post(self.upload_url, {
+            'images[]': [
+                get_img_file(create_test_image(700, 700)),
+            ],
+            'profile': 'simple0',
+            'label': 'world0',
+        })
+        self.assertEqual(r2.status_code, 200)
+        d2 = self.get_json(r2)
+        self.assertEqual(len(d2['errors']), 0)
+        self.assertUploadedFilesExist(d2)
+
+        remove_all_files_of_img_id(d1['uploaded'][0]['img_id'])
+        self.assertUploadedFilesExist(d2)
+        self.assertUploadedFilesNotExist(d1)
+
+        remove_all_files_of_img_id(d2['uploaded'][0]['img_id'])
+        self.assertUploadedFilesNotExist(d2)

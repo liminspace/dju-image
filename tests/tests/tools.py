@@ -10,7 +10,7 @@ from cStringIO import StringIO
 from django.conf import settings
 from django.test import TestCase
 from dju_image import settings as dju_settings
-from dju_image.tools import clear_profile_configs_cache
+from dju_image.tools import clear_profile_configs_cache, media_path
 
 
 def create_test_image(w, h, c='RGB'):
@@ -44,7 +44,7 @@ def save_img_file(fn, img, img_format='JPEG', jpeg_quality=100):
 
 
 def clean_media_dir():
-    for fn in glob.glob(os.path.join(settings.MEDIA_ROOT, '*')):
+    for fn in glob.glob(media_path('*')):
         if os.path.isdir(fn):
             shutil.rmtree(fn)
         else:
@@ -86,8 +86,16 @@ class ViewTestCase(TestCase):
 
     def assertUploadedFilesExist(self, response_data):
         for item in response_data['uploaded']:
-            path = os.path.join(settings.MEDIA_ROOT, item['rel_url']).replace('\\', '/')
+            path = media_path(item['rel_url'])
             self.assertTrue(os.path.isfile(path))
             for var_data in item['variants'].values():
-                var_path = os.path.join(settings.MEDIA_ROOT, var_data['rel_url']).replace('\\', '/')
+                var_path = media_path(var_data['rel_url'])
                 self.assertTrue(os.path.isfile(var_path))
+
+    def assertUploadedFilesNotExist(self, response_data):
+        for item in response_data['uploaded']:
+            path = media_path(item['rel_url'])
+            self.assertFalse(os.path.isfile(path))
+            for var_data in item['variants'].values():
+                var_path = media_path(var_data['rel_url'])
+                self.assertFalse(os.path.isfile(var_path))
