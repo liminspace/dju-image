@@ -7,7 +7,8 @@ from django.core.urlresolvers import reverse
 from dju_image.image import image_get_format
 from dju_image.tools import (get_relative_path_from_img_id, generate_img_id, get_profile_configs,
                              get_variant_label, save_file, get_files_by_img_id, HASH_SIZE,
-                             remove_tmp_prefix_from_filename, remove_tmp_prefix_from_file_path, make_permalink)
+                             remove_tmp_prefix_from_filename, remove_tmp_prefix_from_file_path, make_permalink,
+                             is_img_id_exists)
 from dju_image import settings as dju_settings
 from tests.tests.tools import get_img_file, create_test_image, clean_media_dir, ViewTestCase
 
@@ -440,3 +441,23 @@ class TestTools(ViewTestCase):
                 )
                 new_item['variants'][var_label] = {'rel_url': files['variants'][var_label]}
             self.assertUploadedFilesExist({'uploaded': [new_item]})
+
+    def test_is_img_id_exists(self):
+        self.assertFalse(is_img_id_exists('default:abcde1234_ab12_myname.jpeg'))
+
+        r = self.client.post(self.upload_url, {
+            'images[]': [
+                get_img_file(create_test_image(1000, 1000)),
+                get_img_file(create_test_image(900, 900)),
+                get_img_file(create_test_image(800, 800)),
+                get_img_file(create_test_image(700, 700)),
+            ],
+            'profile': 'simple0',
+            'label': 'world0',
+        })
+        self.assertEqual(r.status_code, 200)
+        d = self.get_json(r)
+        self.assertEqual(len(d['errors']), 0)
+        self.assertUploadedFilesExist(d)
+        for item in d['uploaded']:
+            self.assertTrue(item['img_id'])

@@ -139,6 +139,15 @@ def get_relative_path_from_img_id(img_id, variant_label=None, ext=None, create_d
     return relative_path
 
 
+def is_img_id_exists(img_id):
+    """
+    Checks if img_id has real file on filesystem.
+    """
+    main_rel_path = get_relative_path_from_img_id(img_id)
+    main_path = os.path.join(settings.MEDIA_ROOT, main_rel_path).replace('\\', '/')
+    return os.path.isfile(main_path)
+
+
 def get_variant_label(v_conf):
     """
     Generates name for variant images based settings (by variants sizes).
