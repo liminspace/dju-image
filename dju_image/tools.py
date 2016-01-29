@@ -148,6 +148,24 @@ def is_img_id_exists(img_id):
     return os.path.isfile(main_path)
 
 
+def is_img_id_valid(img_id):
+    """
+    Checks if img_id is valid.
+    """
+    t = re.sub(r'[^a-z0-9_:\-\.]', '', img_id, re.IGNORECASE)
+    t = re.sub(r'\.+', '.', t)
+    if img_id != t or img_id.count(':') != 1:
+        return False
+    profile, base_name = img_id.split(':', 1)
+    if not profile or not base_name:
+        return False
+    try:
+        get_profile_configs(profile)
+    except ValueError:
+        return False
+    return True
+
+
 def get_variant_label(v_conf):
     """
     Generates name for variant images based settings (by variants sizes).

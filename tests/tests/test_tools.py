@@ -8,7 +8,7 @@ from dju_image.image import image_get_format
 from dju_image.tools import (get_relative_path_from_img_id, generate_img_id, get_profile_configs,
                              get_variant_label, save_file, get_files_by_img_id, HASH_SIZE,
                              remove_tmp_prefix_from_filename, remove_tmp_prefix_from_file_path, make_permalink,
-                             is_img_id_exists)
+                             is_img_id_exists, is_img_id_valid)
 from dju_image import settings as dju_settings
 from tests.tests.tools import get_img_file, create_test_image, clean_media_dir, ViewTestCase
 
@@ -461,3 +461,21 @@ class TestTools(ViewTestCase):
         self.assertUploadedFilesExist(d)
         for item in d['uploaded']:
             self.assertTrue(item['img_id'])
+
+    def test_is_img_id_valid(self):
+        self.assertTrue(is_img_id_valid('default:abcde1234_ab12_myname.jpeg'))
+        self.assertTrue(is_img_id_valid('default:abcde1234_ab12.jpeg'))
+        self.assertTrue(is_img_id_valid('default:abcde1234_ab12'))
+        self.assertTrue(is_img_id_valid('default:__t_abcde1234_ab12_myname.jpeg'))
+        self.assertTrue(is_img_id_valid('default:__t_abcde1234_ab12.jpeg'))
+        self.assertTrue(is_img_id_valid('default:__t_abcde1234_ab12'))
+
+        self.assertFalse(is_img_id_valid('none:abcde1234_ab12_myname.jpeg'))
+        self.assertFalse(is_img_id_valid('default::abcde1234_ab12_myname.jpeg'))
+        self.assertFalse(is_img_id_valid('defaultabcde1234_ab12.jpeg'))
+        self.assertFalse(is_img_id_valid(':default:abcde1234_ab12.jpeg'))
+        self.assertFalse(is_img_id_valid(':defaultabcde1234_ab12.jpeg'))
+        self.assertFalse(is_img_id_valid('defaultabcde1234_ab12.jpeg:'))
+        self.assertFalse(is_img_id_valid('default:abcde1234_ab12..jpeg'))
+        self.assertFalse(is_img_id_valid('default:abcd/e1234_ab12.jpeg'))
+        self.assertFalse(is_img_id_valid('default:../../../abcde1234_ab12..jpeg'))
