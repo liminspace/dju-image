@@ -110,4 +110,9 @@ DJU_IMG_UPLOAD_PROFILES = {
             {'MAX_SIZE': (20, 30), 'LABEL': 'lab1'},
         ],
     },
+    'simple2': {
+        'PATH': 's2',
+        'MAX_SIZE': (200, 200),
+        'TYPES': ('PNG',)
+    },
 }

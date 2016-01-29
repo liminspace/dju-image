@@ -70,7 +70,8 @@ def upload_image(request):
             continue
         adjust_image(f, max_size=conf['MAX_SIZE'], new_format=conf['FORMAT'],
                      jpeg_quality=conf['JPEG_QUALITY'], fill=conf['FILL'], stretch=conf['STRETCH'])
-        img_id = generate_img_id(profile, ext=image_get_format(f), label=request.POST.get('label'), tmp=True)
+        img_id = generate_img_id(profile, ext=image_get_format(f),
+                                 label=request.POST.get('label'), tmp=True)
         relative_path = get_relative_path_from_img_id(img_id)
         full_path = media_path(relative_path)
         save_file(f, full_path)
@@ -85,9 +86,10 @@ def upload_image(request):
             if not label:
                 label = get_variant_label(v_conf)
             v_f = adjust_image(f, max_size=v_conf['MAX_SIZE'], new_format=v_conf['FORMAT'],
-                               jpeg_quality=v_conf['JPEG_QUALITY'], fill=v_conf['FILL'], stretch=v_conf['STRETCH'],
-                               return_new_image=True)
-            v_relative_path = get_relative_path_from_img_id(img_id, variant_label=label, ext=image_get_format(v_f))
+                               jpeg_quality=v_conf['JPEG_QUALITY'], fill=v_conf['FILL'],
+                               stretch=v_conf['STRETCH'], return_new_image=True)
+            v_relative_path = get_relative_path_from_img_id(img_id, variant_label=label,
+                                                            ext=image_get_format(v_f))
             v_full_path = media_path(v_relative_path)
             save_file(v_f, v_full_path)
             data['variants'][label] = {

@@ -9,6 +9,7 @@ from django.utils.translation import ugettext_lazy
 from django.conf import settings
 from dju_common.file import make_dirs_for_file_path
 from dju_common.tools import datetime_to_dtstr
+from dju_image.image import is_image, adjust_image, image_get_format
 from . import settings as dju_settings
 
 
@@ -295,6 +296,42 @@ def make_permalink(img_id):
     for file_path_from, file_path_to in move_list:
         os.rename(media_path(file_path_from), media_path(file_path_to))
     return new_img_id
+
+
+def upload_from_fs(fn, profile=None, label=None):
+    """
+    Saves image from fn with TMP prefix and returns img_id.
+    """
+    if not os.path.isfile(fn):
+        raise ValueError('File is not exists: {}'.format(fn))
+    if profile is None:
+        profile = 'default'
+    conf = get_profile_configs(profile)
+    with open(fn, 'rb') as f:
+        if not is_image(f, types=conf['TYPES']):
+            msg = (('Format of uploaded file "%(name)s" is not allowed. '
+                    'Allowed formats is: %(formats)s.') %
+                   {'name': fn, 'formats': ', '.join(map(lambda t: t.upper(), conf['TYPES']))})
+            raise RuntimeError(msg)
+        t = adjust_image(f, max_size=conf['MAX_SIZE'], new_format=conf['FORMAT'],
+                         jpeg_quality=conf['JPEG_QUALITY'], fill=conf['FILL'],
+                         stretch=conf['STRETCH'], return_new_image=True)
+        img_id = generate_img_id(profile, ext=image_get_format(f), label=label, tmp=True)
+        relative_path = get_relative_path_from_img_id(img_id)
+        full_path = media_path(relative_path)
+        save_file(t, full_path)
+        for v_conf in conf['VARIANTS']:
+            v_label = v_conf['LABEL']
+            if not v_label:
+                v_label = get_variant_label(v_conf)
+            v_t = adjust_image(t, max_size=v_conf['MAX_SIZE'], new_format=v_conf['FORMAT'],
+                               jpeg_quality=v_conf['JPEG_QUALITY'], fill=v_conf['FILL'],
+                               stretch=v_conf['STRETCH'], return_new_image=True)
+            v_relative_path = get_relative_path_from_img_id(img_id, variant_label=v_label,
+                                                            ext=image_get_format(v_t))
+            v_full_path = media_path(v_relative_path)
+            save_file(v_t, v_full_path)
+        return img_id
 
 
 def make_permalink_by_img_url(img_url):

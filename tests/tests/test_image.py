@@ -1,6 +1,4 @@
-import glob
 import os
-import shutil
 import cStringIO
 from PIL import Image
 from django.conf import settings
@@ -9,7 +7,8 @@ from django.test import TestCase
 from dju_image import settings as dju_settings
 from dju_image.image import (adjust_image, image_get_format, is_image, optimize_png_file,
                              set_uploaded_file_content_type_and_file_ext)
-from tests.tests.tools import create_test_image, get_img_file, save_img_file, safe_change_dju_settings
+from tests.tests.tools import (create_test_image, get_img_file, save_img_file,
+                               safe_change_dju_settings, CleanTmpDirMixin)
 
 
 class ImageCase(TestCase):
@@ -164,7 +163,7 @@ class TestIsImage(TestCase):
         self.assertEqual(uf.content_type, 'image/jpeg')
 
 
-class OptimizePNGFile(ImageCase):
+class OptimizePNGFile(ImageCase, CleanTmpDirMixin):
     def setUp(self):
         super(OptimizePNGFile, self).setUp()
         self._clean_tmp_dir()
@@ -175,13 +174,6 @@ class OptimizePNGFile(ImageCase):
     def tearDown(self):
         super(OptimizePNGFile, self).tearDown()
         self._clean_tmp_dir()
-
-    def _clean_tmp_dir(self):
-        for fn in glob.glob(os.path.join(settings.TMP_DIR, '*')):
-            if os.path.isdir(fn):
-                shutil.rmtree(fn)
-            else:
-                os.remove(fn)
 
     def test_pass_path_to_files(self):
         o_fn = os.path.join(settings.TMP_DIR, 'test1_result.png')

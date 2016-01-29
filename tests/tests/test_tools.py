@@ -6,17 +6,25 @@ from django.core.urlresolvers import reverse
 from dju_image.image import image_get_format
 from dju_image.tools import (get_relative_path_from_img_id, generate_img_id, get_profile_configs,
                              get_variant_label, save_file, get_files_by_img_id, HASH_SIZE,
-                             remove_tmp_prefix_from_filename, remove_tmp_prefix_from_file_path, make_permalink,
-                             is_img_id_exists, is_img_id_valid, remove_all_files_of_img_id, media_path)
+                             remove_tmp_prefix_from_filename, remove_tmp_prefix_from_file_path,
+                             make_permalink, is_img_id_exists, is_img_id_valid,
+                             remove_all_files_of_img_id, media_path, upload_from_fs)
 from dju_image import settings as dju_settings
-from tests.tests.tools import get_img_file, create_test_image, clean_media_dir, ViewTestCase
+from tests.tests.tools import (get_img_file, create_test_image, clean_media_dir, ViewTestCase,
+                               save_img_file, CleanTmpDirMixin)
 
 
-class TestTools(ViewTestCase):
+class TestTools(ViewTestCase, CleanTmpDirMixin):
     @classmethod
     def setUpClass(cls):
         super(TestTools, cls).setUpClass()
         cls.upload_url = reverse('dju_image_upload')
+        cls._clean_tmp_dir()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(ViewTestCase, cls).tearDownClass()
+        cls._clean_tmp_dir()
 
     def setUp(self):
         super(TestTools, self).setUp()
@@ -498,3 +506,30 @@ class TestTools(ViewTestCase):
 
         remove_all_files_of_img_id(d2['uploaded'][0]['img_id'])
         self.assertUploadedFilesNotExist(d2)
+
+    def test_upload_from_fs(self):
+        fn = save_img_file('t1.jpeg', create_test_image(600, 600))
+        try:
+            img_id = upload_from_fs(fn)
+        except (ValueError, RuntimeError), e:
+            raise self.failureException(e)
+        else:
+            self.assertTrue(is_img_id_valid(img_id))
+            self.assertTrue(is_img_id_exists(img_id))
+
+        with self.assertRaises(ValueError):
+            upload_from_fs('none')
+
+        fn = save_img_file('t2.jpeg', create_test_image(500, 500))
+        with self.assertRaises(RuntimeError):
+            upload_from_fs(fn, profile='simple2')
+
+        fn = save_img_file('t3.jpeg', create_test_image(400, 400))
+        try:
+            img_id = upload_from_fs(fn, profile='simple1', label='ttt')
+        except (ValueError, RuntimeError), e:
+            raise self.failureException(e)
+        else:
+            self.assertTrue(is_img_id_valid(img_id))
+            self.assertTrue(is_img_id_exists(img_id))
+            self.assertTrue(get_files_by_img_id(img_id)['variants'])

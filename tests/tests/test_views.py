@@ -3,10 +3,11 @@ from cStringIO import StringIO
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.test import override_settings
-from dju_image.tools import get_relative_path_from_img_id, clear_profile_configs_cache, ERROR_MESSAGES as TOOLS_ERRORS
+from dju_image.tools import (get_relative_path_from_img_id, clear_profile_configs_cache,
+                             ERROR_MESSAGES as TOOLS_ERRORS)
 from dju_image.views import ERROR_MESSAGES as VIEWS_ERRORS
-from tests.tests.tools import (get_img_file, create_test_image, clean_media_dir, safe_change_dju_settings,
-                               ViewTestCase)
+from tests.tests.tools import (get_img_file, create_test_image, clean_media_dir,
+                               safe_change_dju_settings, ViewTestCase)
 from dju_image import settings as dju_settings
 
 

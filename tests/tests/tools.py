@@ -99,3 +99,13 @@ class ViewTestCase(TestCase):
             for var_data in item['variants'].values():
                 var_path = media_path(var_data['rel_url'])
                 self.assertFalse(os.path.isfile(var_path))
+
+
+class CleanTmpDirMixin(object):
+    @classmethod
+    def _clean_tmp_dir(cls):
+        for fn in glob.glob(os.path.join(settings.TMP_DIR, '*')):
+            if os.path.isdir(fn):
+                shutil.rmtree(fn)
+            else:
+                os.remove(fn)
