@@ -244,25 +244,8 @@ def remove_all_files_of_img_id(img_id):
             os.remove(media_path(fn))
 
 
-# def get_filepath_of_url(url):  # todo remove it
-#     """ Повертає шлях до файлу MEDIA по URL-адресі. """
-#     if url.startswith(settings.MEDIA_URL):
-#         url = url[len(settings.MEDIA_URL):]
-#     fn = os.path.join(settings.MEDIA_ROOT, os.path.normpath(url)).replace('\\', '/')
-#     return fn
-
-
-# def remove_file_by_url(url, with_thumbs=True):  # todo remove it
-#     """
-#     Видаляє файл по URL, якщо він знаходиться в папці MEDIA.
-#     with_thumbs - шукати і видаляти мініатюри файлу.
-#     """
-#     files = [get_filepath_of_url(url)]
-#     if with_thumbs:
-#         files.extend(get_thumbs_for_image(files[0]))
-#     for filepath in files:
-#         if os.path.isfile(filepath):
-#             os.remove(filepath)
+def img_id_has_tmp_prefix(img_id):
+    return (':' + dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX) in img_id
 
 
 def remove_tmp_prefix_from_filename(filename):
@@ -332,11 +315,3 @@ def upload_from_fs(fn, profile=None, label=None):
             v_full_path = media_path(v_relative_path)
             save_file(v_t, v_full_path)
         return img_id
-
-
-def make_permalink_by_img_url(img_url):
-    """
-    Те ж що make_permalink, тільки для url картинки.
-    Повертає url картинки без префікса.
-    """
-    pass  # todo do it

@@ -8,7 +8,8 @@ from dju_image.tools import (get_relative_path_from_img_id, generate_img_id, get
                              get_variant_label, save_file, get_files_by_img_id, HASH_SIZE,
                              remove_tmp_prefix_from_filename, remove_tmp_prefix_from_file_path,
                              make_permalink, is_img_id_exists, is_img_id_valid,
-                             remove_all_files_of_img_id, media_path, upload_from_fs)
+                             remove_all_files_of_img_id, media_path, upload_from_fs,
+                             img_id_has_tmp_prefix)
 from dju_image import settings as dju_settings
 from tests.tests.tools import (get_img_file, create_test_image, clean_media_dir, ViewTestCase,
                                save_img_file, CleanTmpDirMixin)
@@ -533,3 +534,9 @@ class TestTools(ViewTestCase, CleanTmpDirMixin):
             self.assertTrue(is_img_id_valid(img_id))
             self.assertTrue(is_img_id_exists(img_id))
             self.assertTrue(get_files_by_img_id(img_id)['variants'])
+
+    def test_img_id_has_tmp_prefix(self):
+        img_id = generate_img_id('none', ext='png', label='zz', tmp=False)
+        img_id_tmp = generate_img_id('none', ext='png', label='zz', tmp=True)
+        self.assertTrue(img_id_has_tmp_prefix(img_id_tmp))
+        self.assertFalse(img_id_has_tmp_prefix(img_id))
