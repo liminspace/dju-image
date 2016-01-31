@@ -1,57 +1,48 @@
 # coding=utf-8
+import os
+import re
+import datetime
+from django.conf import settings
+from dju_common.tools import dtstr_to_datetime
+from .tools import get_profile_configs
+from . import settings as dju_settings
 
 
-def remove_old_tmp_files(dirs, expiration_days=(7 * 24), recursive=True):
+re_tmp = re.compile(r'^{pref}(?P<dtstr>[a-z0-9]{7,9})_[a-z0-9]{4}.*$'.replace(
+    '{pref}', dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX
+))
+
+
+def get_files_recursive(path):
+    for root, dirs, files in os.walk(path):
+        for fn in files:
+            yield os.path.join(root, fn).replace('\\', '/')
+
+
+def remove_old_tmp_files(profiles=None, max_lifetime=(7 * 24)):
     """
-    Видаляє файли тимчасові файли старші за expiration_days.
-    dirs - список шляхів (абсолютних) до папок, в котрих буде відбуватись пошук файлів.
-    expiration_days - термін в днях, після якого файл має бути видалений
+    Removes old temp files that is older than expiration_hours.
+    If profiles is None then will be use all profiles.
     """
-    pass  # todo do it
-
-
-# def remove_old_tmp_files(dirs, max_lifetime=(7 * 24), recursive=True):  # todo remove it
-#     """
-#     Видалення старих тимчасових файлів.
-#     Запускати функцію періодично раз на добу або рідше.
-#     dirs -- список шляхів до папок, в яких треба зробити чистку (шлях має бути абсолютний)
-#     max_lifetime -- час життя файлу, в годинах.
-#     Запуск в консолі:
-#     # python manage.py shell
-#     > from dj_utils.upload import remove_old_tmp_files
-#     > remove_old_tmp_files(['images'], (4 * 24))
-#     """
-#     def get_files_recursive(path):
-#         for w_root, w_dirs, w_files in os.walk(path):
-#             for w_file in w_files:
-#                 yield os.path.join(w_root, w_file).replace('\\', '/')
-#
-#     def get_files(path):
-#         pattern = os.path.join(path, dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX + '*').replace('\\', '/')
-#         for filepath in glob.iglob(pattern):
-#             if os.path.isfile(filepath):
-#                 yield filepath
-#
-#     old_dt = datetime.datetime.utcnow() - datetime.timedelta(hours=max_lifetime)
-#     r = re.compile(
-#         r"^%s(?P<dtstr>[a-z0-9]+?)_[a-z0-9]+?(?:_.+?)?\.[a-z0-9]{1,8}$" % dju_settings.DJU_IMG_UPLOAD_TMP_PREFIX,
-#         re.I
-#     )
-#     find_files = get_files_recursive if recursive else get_files
-#     total = removed = 0
-#     for dir_path in dirs:
-#         if not os.path.isdir(dir_path):
-#             continue
-#         for fn_path in find_files(dir_path):
-#             m = r.match(os.path.basename(fn_path))
-#             if not m:
-#                 continue
-#             total += 1
-#             fdt = dtstr_to_datetime(m.group('dtstr'))
-#             if fdt and old_dt > fdt:
-#                 os.remove(fn_path)
-#                 removed += 1
-#     return removed, total
+    assert isinstance(profiles, (list, tuple)) or profiles is None
+    if profiles is None:
+        profiles = dju_settings.DJU_IMG_UPLOAD_PROFILES.keys()
+    profiles = set(('default',) + tuple(profiles))
+    total = removed = 0
+    old_dt = datetime.datetime.utcnow() - datetime.timedelta(hours=max_lifetime)
+    for profile in profiles:
+        conf = get_profile_configs(profile=profile)
+        root_path = os.path.join(settings.MEDIA_ROOT, dju_settings.DJU_IMG_UPLOAD_SUBDIR, conf['PATH'])
+        for file_path in get_files_recursive(root_path):
+            m = re_tmp.match(os.path.basename(file_path))
+            if m is None:
+                continue
+            total += 1
+            fdt = dtstr_to_datetime(m.group('dtstr'))
+            if fdt and old_dt > fdt:
+                os.remove(file_path)
+                removed += 1
+    return removed, total
 
 
 def remake_images_variants(profiles, clean=True):
