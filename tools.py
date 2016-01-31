@@ -115,8 +115,8 @@ def test(*args):
 
 def release(*args):
     root_dir = os.path.dirname(os.path.abspath(__file__))
-    shutil.rmtree(os.path.join(root_dir, 'build'))
-    shutil.rmtree(os.path.join(root_dir, 'dju_image.egg-info'))
+    shutil.rmtree(os.path.join(root_dir, 'build'), ignore_errors=True)
+    shutil.rmtree(os.path.join(root_dir, 'dju_image.egg-info'), ignore_errors=True)
     subprocess.call(['python', 'setup.py', 'bdist_wheel', 'upload'])
 
 
