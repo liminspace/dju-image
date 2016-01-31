@@ -9,7 +9,7 @@ class Command(LoggingBaseCommand):
         super(Command, self).add_arguments(parser)
         parser.add_argument('-p', '--profiles', action='append', dest='profiles', default=[],
                             help='Upload profiles. Dont set for all.')
-        parser.add_argument('-m', '--max-lifetime', action='store', type='int', dest='max_lifetime', default=168,
+        parser.add_argument('-m', '--max-lifetime', action='store', type=int, dest='max_lifetime', default=168,
                             help='Time of life file in hours. Default: 168 (7 days)')
 
     def handle(self, *args, **options):

@@ -89,6 +89,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
 TMP_DIR = os.path.join(BASE_DIR, 'tmp')
+LOG_DIR = TMP_DIR
 
 DJU_IMG_UPLOAD_PROFILES = {
     'simple0': {
