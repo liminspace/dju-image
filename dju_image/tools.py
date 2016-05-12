@@ -273,6 +273,8 @@ def make_permalink(img_id):
     profile, filename = img_id.split(':', 1)
     new_img_id = profile + ':' + remove_tmp_prefix_from_filename(filename)
     urls = get_files_by_img_id(img_id)
+    if urls is None:
+        return urls
     move_list = {(urls['main'], remove_tmp_prefix_from_file_path(urls['main']))}
     for var_label, var_file_path in urls['variants'].iteritems():
         move_list.add((var_file_path, remove_tmp_prefix_from_file_path(var_file_path)))

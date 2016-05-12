@@ -1,7 +1,7 @@
 django<1.10
 coverage==4.0.3
-dju-common==0.1.16
+dju-common==0.2.2
 Pillow==3.2.0
-pytz==2016.3
+pytz==2016.4
 simplejson==3.8.2
 wheel==0.29.0
