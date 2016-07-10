@@ -137,3 +137,10 @@ class TestTemplatetagsDjUtils(TestCase):
             settings.MEDIA_URL,
             dju_settings.DJU_IMG_UPLOAD_VARIANT_SUFFIX,
         ))
+
+    def test_dju_img_url_wrong_imgid(self):
+        t = self.get_tpl_f("{% dju_img_url 'simple1ihrtfelu_c5e7.jpeg' %}")
+        self.assertEqual(t(), '')
+
+        t = self.get_tpl_f("{% dju_img_url '' %}")
+        self.assertEqual(t(), '')
