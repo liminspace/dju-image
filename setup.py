@@ -18,8 +18,7 @@ setup(
     zip_safe=False,  # because include static
     install_requires=[
         'dju-common',
-        'django<1.10',
-        'simplejson',
+        'django>=1.8.<1.11',
         'Pillow',
     ],
 )
