@@ -9,7 +9,7 @@ from dju_image.tools import (get_relative_path_from_img_id, generate_img_id, get
                              remove_tmp_prefix_from_filename, remove_tmp_prefix_from_file_path,
                              make_permalink, is_img_id_exists, is_img_id_valid,
                              remove_all_files_of_img_id, media_path, upload_from_fs,
-                             img_id_has_tmp_prefix)
+                             img_id_has_tmp_prefix, upload_from_fileobject)
 from dju_image import settings as dju_settings
 from tests.tests.tools import (get_img_file, create_test_image, clean_media_dir, ViewTestCase,
                                save_img_file, CleanTmpDirMixin)
@@ -528,6 +528,33 @@ class TestTools(ViewTestCase, CleanTmpDirMixin):
         fn = save_img_file('t3.jpeg', create_test_image(400, 400))
         try:
             img_id = upload_from_fs(fn, profile='simple1', label='ttt')
+        except (ValueError, RuntimeError), e:
+            raise self.failureException(e)
+        else:
+            self.assertTrue(is_img_id_valid(img_id))
+            self.assertTrue(is_img_id_exists(img_id))
+            self.assertTrue(get_files_by_img_id(img_id)['variants'])
+
+    def test_upload_from_fileobject(self):
+        f = get_img_file(create_test_image(600, 600))
+        try:
+            img_id = upload_from_fileobject(f)
+        except (ValueError, RuntimeError), e:
+            raise self.failureException(e)
+        else:
+            self.assertTrue(is_img_id_valid(img_id))
+            self.assertTrue(is_img_id_exists(img_id))
+
+        with self.assertRaises(ValueError):
+            upload_from_fs('none')
+
+        f = get_img_file(create_test_image(500, 500))
+        with self.assertRaises(RuntimeError):
+            upload_from_fileobject(f, profile='simple2')
+
+        f = get_img_file(create_test_image(400, 400))
+        try:
+            img_id = upload_from_fileobject(f, profile='simple1', label='ttt')
         except (ValueError, RuntimeError), e:
             raise self.failureException(e)
         else:

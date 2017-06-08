@@ -8,5 +8,5 @@ django<1.11
 coverage==4.3.1
 dju-common==0.3.5
 Pillow==4.0.0
-pytz==2016.10
+pytz==2017.2
 simplejson==3.10.0
